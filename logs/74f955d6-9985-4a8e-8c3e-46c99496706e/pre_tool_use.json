@@ -1,0 +1,240 @@
+[
+  {
+    "tool_name": "Bash",
+    "tool_use_id": "toolu_01QNxze1KoeW8p3FqYvYnKKf",
+    "session_id": "74f955d6-9985-4a8e-8c3e-46c99496706e",
+    "hook_event_name": "PreToolUse",
+    "tool_summary": {
+      "tool_name": "Bash",
+      "command": "ls -la /Users/tk/Code/tk-agent-team/ 2>&1 | head -50",
+      "description": "List project directory contents"
+    }
+  },
+  {
+    "tool_name": "Read",
+    "tool_use_id": "toolu_01SU5FKgFEZCQiouedjAdPHk",
+    "session_id": "74f955d6-9985-4a8e-8c3e-46c99496706e",
+    "hook_event_name": "PreToolUse",
+    "tool_summary": {
+      "tool_name": "Read",
+      "file_path": "/Users/tk/Code/tk-agent-team/README.md"
+    }
+  },
+  {
+    "tool_name": "Read",
+    "tool_use_id": "toolu_012ZndhJDE3HLhFYwVC3XRHM",
+    "session_id": "74f955d6-9985-4a8e-8c3e-46c99496706e",
+    "hook_event_name": "PreToolUse",
+    "tool_summary": {
+      "tool_name": "Read",
+      "file_path": "/Users/tk/Code/tk-agent-team/pyproject.toml"
+    }
+  },
+  {
+    "tool_name": "Read",
+    "tool_use_id": "toolu_011oujub9DBGmEs43iyBD3EQ",
+    "session_id": "74f955d6-9985-4a8e-8c3e-46c99496706e",
+    "hook_event_name": "PreToolUse",
+    "tool_summary": {
+      "tool_name": "Read",
+      "file_path": "/Users/tk/Code/tk-agent-team/__init__.py"
+    }
+  },
+  {
+    "tool_name": "Read",
+    "tool_use_id": "toolu_01HtAfiwj6tp9GuzPiU4QCJV",
+    "session_id": "74f955d6-9985-4a8e-8c3e-46c99496706e",
+    "hook_event_name": "PreToolUse",
+    "tool_summary": {
+      "tool_name": "Read",
+      "file_path": "/Users/tk/Code/tk-agent-team/__main__.py"
+    }
+  },
+  {
+    "tool_name": "Read",
+    "tool_use_id": "toolu_01Lw3umZPrDSWVXMnVczL3gj",
+    "session_id": "74f955d6-9985-4a8e-8c3e-46c99496706e",
+    "hook_event_name": "PreToolUse",
+    "tool_summary": {
+      "tool_name": "Read",
+      "file_path": "/Users/tk/Code/tk-agent-team/schema.py"
+    }
+  },
+  {
+    "tool_name": "Read",
+    "tool_use_id": "toolu_01KAfTbC8v9nUMYuE8JdfYcG",
+    "session_id": "74f955d6-9985-4a8e-8c3e-46c99496706e",
+    "hook_event_name": "PreToolUse",
+    "tool_summary": {
+      "tool_name": "Read",
+      "file_path": "/Users/tk/Code/tk-agent-team/storage.py"
+    }
+  },
+  {
+    "tool_name": "Read",
+    "tool_use_id": "toolu_01BjY6gsoygrngtMaCRjp7P8",
+    "session_id": "74f955d6-9985-4a8e-8c3e-46c99496706e",
+    "hook_event_name": "PreToolUse",
+    "tool_summary": {
+      "tool_name": "Read",
+      "file_path": "/Users/tk/Code/tk-agent-team/server.py"
+    }
+  },
+  {
+    "tool_name": "Bash",
+    "tool_use_id": "toolu_015Y1gtPJMTSijx2CTvciK7F",
+    "session_id": "74f955d6-9985-4a8e-8c3e-46c99496706e",
+    "hook_event_name": "PreToolUse",
+    "tool_summary": {
+      "tool_name": "Bash",
+      "command": "ls -la /Users/tk/Code/tk-agent-team/.claude/ /Users/tk/Code/tk-agent-team/logs/ 2>&1; echo \"---\"; file /Users/tk/Code/tk-agent-team/files.zip; echo \"---\"; unzip -l /Users/tk/Code/tk-agent-team/files.z",
+      "description": "Inspect .claude, logs, and files.zip"
+    }
+  },
+  {
+    "tool_name": "Read",
+    "tool_use_id": "toolu_01VAMFWvPY8n7n3fCML4jakX",
+    "session_id": "74f955d6-9985-4a8e-8c3e-46c99496706e",
+    "hook_event_name": "PreToolUse",
+    "tool_summary": {
+      "tool_name": "Read",
+      "file_path": "/Users/tk/Code/tk-agent-team/test_agent_substrate.py",
+      "limit": 30
+    }
+  },
+  {
+    "tool_name": "TodoWrite",
+    "tool_use_id": "toolu_01UVX2kXpfEtCmWorg1gPg2L",
+    "session_id": "74f955d6-9985-4a8e-8c3e-46c99496706e",
+    "hook_event_name": "PreToolUse",
+    "tool_summary": {
+      "tool_name": "TodoWrite"
+    }
+  },
+  {
+    "tool_name": "Bash",
+    "tool_use_id": "toolu_012j1c9eLbFb8QJ6AfCNGU4k",
+    "session_id": "74f955d6-9985-4a8e-8c3e-46c99496706e",
+    "hook_event_name": "PreToolUse",
+    "tool_summary": {
+      "tool_name": "Bash",
+      "command": "\\\nmkdir -p mcp-servers/agent-substrate/src/agent_substrate && \\\nmkdir -p mcp-servers/agent-substrate/tests && \\\ngit mv 2>/dev/null schema.py storage.py server.py __init__.py __main__.py mcp-servers/ag",
+      "description": "Relocate files into mcp-servers/agent-substrate/ src-layout"
+    }
+  },
+  {
+    "tool_name": "TodoWrite",
+    "tool_use_id": "toolu_01DZQKC3FUCJxxxL5hJctCqk",
+    "session_id": "74f955d6-9985-4a8e-8c3e-46c99496706e",
+    "hook_event_name": "PreToolUse",
+    "tool_summary": {
+      "tool_name": "TodoWrite"
+    }
+  },
+  {
+    "tool_name": "Write",
+    "tool_use_id": "toolu_01Ph7vfuCnDEPMuohszCYNtK",
+    "session_id": "74f955d6-9985-4a8e-8c3e-46c99496706e",
+    "hook_event_name": "PreToolUse",
+    "tool_summary": {
+      "tool_name": "Write",
+      "file_path": "/Users/tk/Code/tk-agent-team/.claude-plugin/plugin.json",
+      "content_length": 357
+    }
+  },
+  {
+    "tool_name": "Write",
+    "tool_use_id": "toolu_01C1vv2Tfoanh1r5TxSXKh7M",
+    "session_id": "74f955d6-9985-4a8e-8c3e-46c99496706e",
+    "hook_event_name": "PreToolUse",
+    "tool_summary": {
+      "tool_name": "Write",
+      "file_path": "/Users/tk/Code/tk-agent-team/.mcp.json",
+      "content_length": 245
+    }
+  },
+  {
+    "tool_name": "Write",
+    "tool_use_id": "toolu_01JEywSmM9c4k5fEpGyNjnaW",
+    "session_id": "74f955d6-9985-4a8e-8c3e-46c99496706e",
+    "hook_event_name": "PreToolUse",
+    "tool_summary": {
+      "tool_name": "Write",
+      "file_path": "/Users/tk/Code/tk-agent-team/skills/memory-curate/SKILL.md",
+      "content_length": 3440
+    }
+  },
+  {
+    "tool_name": "Write",
+    "tool_use_id": "toolu_01TxjHcGkFQPw6JAsXNMjEc9",
+    "session_id": "74f955d6-9985-4a8e-8c3e-46c99496706e",
+    "hook_event_name": "PreToolUse",
+    "tool_summary": {
+      "tool_name": "Write",
+      "file_path": "/Users/tk/Code/tk-agent-team/skills/memory-curate/scoring.md",
+      "content_length": 2814
+    }
+  },
+  {
+    "tool_name": "Write",
+    "tool_use_id": "toolu_01PWuADX6owJ2XuqNDv7gDrm",
+    "session_id": "74f955d6-9985-4a8e-8c3e-46c99496706e",
+    "hook_event_name": "PreToolUse",
+    "tool_summary": {
+      "tool_name": "Write",
+      "file_path": "/Users/tk/Code/tk-agent-team/agents/_TEMPLATE.md",
+      "content_length": 2319
+    }
+  },
+  {
+    "tool_name": "Write",
+    "tool_use_id": "toolu_016eDNef4GNKU9LnpH7d5LJh",
+    "session_id": "74f955d6-9985-4a8e-8c3e-46c99496706e",
+    "hook_event_name": "PreToolUse",
+    "tool_summary": {
+      "tool_name": "Write",
+      "file_path": "/Users/tk/Code/tk-agent-team/agents/README.md",
+      "content_length": 1266
+    }
+  },
+  {
+    "tool_name": "Write",
+    "tool_use_id": "toolu_01T54BSvhQEtosnYYB8Cjb99",
+    "session_id": "74f955d6-9985-4a8e-8c3e-46c99496706e",
+    "hook_event_name": "PreToolUse",
+    "tool_summary": {
+      "tool_name": "Write",
+      "file_path": "/Users/tk/Code/tk-agent-team/README.md",
+      "content_length": 3008
+    }
+  },
+  {
+    "tool_name": "TodoWrite",
+    "tool_use_id": "toolu_0179bpFCxNFCWpwo4NKYM5YE",
+    "session_id": "74f955d6-9985-4a8e-8c3e-46c99496706e",
+    "hook_event_name": "PreToolUse",
+    "tool_summary": {
+      "tool_name": "TodoWrite"
+    }
+  },
+  {
+    "tool_name": "Bash",
+    "tool_use_id": "toolu_01R8iC7EuZPjgWqFm1wCQynC",
+    "session_id": "74f955d6-9985-4a8e-8c3e-46c99496706e",
+    "hook_event_name": "PreToolUse",
+    "tool_summary": {
+      "tool_name": "Bash",
+      "command": "cd /Users/tk/Code/tk-agent-team/mcp-servers/agent-substrate && \\\n  .venv/bin/python -m pip install -e \".[dev]\" --quiet 2>&1 | tail -20 && \\\n  echo \"--- pytest ---\" && \\\n  .venv/bin/python -m pytest -q",
+      "description": "Reinstall package at new layout and run pytest"
+    }
+  },
+  {
+    "tool_name": "TodoWrite",
+    "tool_use_id": "toolu_01Ki6qnWDZ1efisZNSCKLeKj",
+    "session_id": "74f955d6-9985-4a8e-8c3e-46c99496706e",
+    "hook_event_name": "PreToolUse",
+    "tool_summary": {
+      "tool_name": "TodoWrite"
+    }
+  }
+]
