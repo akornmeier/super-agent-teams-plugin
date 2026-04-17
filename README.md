@@ -10,7 +10,7 @@ per-agent memory.
 | `agent-substrate` MCP server | `plugins/tk-agent-team/mcp-servers/agent-substrate/` | YAML-backed memory storage for each teammate, with file locks, atomic writes, and a hard character cap. |
 | `.mcp.json` | `plugins/tk-agent-team/` | Wires `agent-substrate` into the plugin; memory lives at `${CLAUDE_PROJECT_DIR}/.agent-memory/`. |
 | `memory-curate` skill | `plugins/tk-agent-team/skills/memory-curate/` | Three-stage curator (dedupe → score-drop → summarize) dispatched when the hard limit trips. |
-| Teammate definitions | `plugins/tk-agent-team/agents/` | Domain-specialist agents. Start from `agents/_TEMPLATE.md`. |
+| Teammate definitions | `plugins/tk-agent-team/agents/` | Domain-specialist agents. Start from `plugins/tk-agent-team/agents/_TEMPLATE.md`. |
 | Plugin manifest | `plugins/tk-agent-team/.claude-plugin/plugin.json` | Required Claude Code plugin metadata. |
 | Marketplace index | `.claude-plugin/marketplace.json` | Root registry listing all plugins in this repo. |
 
@@ -53,8 +53,8 @@ The `_TEMPLATE.md` file has a **required memory protocol section** —
 keep it verbatim so every teammate shares the same read-at-start /
 append-at-end contract.
 
-Agent families live under `agents/<family>/` — each `.md` in a family
-shares the same memory namespace (e.g. all files in `agents/reviewer/`
+Agent families live under `plugins/tk-agent-team/agents/<family>/` — each `.md` in a family
+shares the same memory namespace (e.g. all files in `plugins/tk-agent-team/agents/reviewer/`
 call `memory_read(agent_name="reviewer")`). Use families when multiple
 personas need to pool their learnings.
 

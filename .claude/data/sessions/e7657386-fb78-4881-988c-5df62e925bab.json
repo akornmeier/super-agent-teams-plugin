@@ -1,8 +1,0 @@
-{
-  "session_id": "e7657386-fb78-4881-988c-5df62e925bab",
-  "prompts": [
-    "Can you compare the structure of the `~/code/compound-engineering-plugin` with this repo? How could we build off some of the concepts in that directory to make this plugin better?",
-    "Let's create a new branch, start with A, then B, then C",
-    "Complete, proceed to C"
-  ]
-}
