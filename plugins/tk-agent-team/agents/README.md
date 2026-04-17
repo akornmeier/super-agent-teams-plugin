@@ -46,6 +46,18 @@ knowledge.
 2. Add at least one persona `.md` file using the family slug as `name:`
 3. All personas in the family use `agent_name="<family-name>"` in memory calls
 
+## Agent family registry
+
+| Family | Personas | Memory namespace | Purpose |
+|--------|----------|-----------------|---------|
+| `reviewer` | architecture, correctness, security | `reviewer.yaml` | Code review — catches structural, logic, and security issues |
+| `developer` | frontend, backend | `developer.yaml` | Implementation — builds features using established patterns with cross-family reviewer memory reads |
+| `curator` | (solo) | `curator.yaml` | Memory management — runs the curation pipeline on demand |
+
+### Cross-family memory reads
+
+The `developer` family reads both `developer.yaml` **and** `reviewer.yaml` at task start. This closes the build→review feedback loop: reviewers' accumulated complaints become developers' pre-applied fixes, so the same issue doesn't get flagged twice.
+
 ## Naming rules
 
 Teammate names must match `^[a-z][a-z0-9-]{0,63}$` (enforced by the MCP

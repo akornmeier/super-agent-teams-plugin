@@ -22,6 +22,29 @@
         "curation",
         "knowledge-management"
       ],
+      "display": {
+        "color": "#6366F1",
+        "emoji": "🧠",
+        "agents": [
+          {
+            "name": "reviewer",
+            "personas": ["architecture", "correctness", "security"],
+            "color": "#6366F1",
+            "emoji": "🏗️"
+          },
+          {
+            "name": "developer",
+            "personas": ["frontend", "backend"],
+            "color": "#3B82F6",
+            "emoji": "⚙️"
+          },
+          {
+            "name": "curator",
+            "color": "#F59E0B",
+            "emoji": "📚"
+          }
+        ]
+      },
       "source": "./plugins/tk-agent-team"
     }
   ]

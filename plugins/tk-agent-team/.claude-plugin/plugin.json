@@ -11,5 +11,34 @@
     "memory",
     "mcp",
     "curation"
+  ],
+  "display": {
+    "color": "#6366F1",
+    "emoji": "🧠",
+    "vibe": "Teams that remember — every task makes the team smarter"
+  },
+  "agents": [
+    {
+      "name": "reviewer",
+      "family": true,
+      "personas": ["architecture", "correctness", "security"],
+      "color": "#6366F1",
+      "emoji": "🏗️",
+      "description": "Three-persona code review family sharing a memory namespace"
+    },
+    {
+      "name": "developer",
+      "family": true,
+      "personas": ["frontend", "backend"],
+      "color": "#3B82F6",
+      "emoji": "⚙️",
+      "description": "Two-persona implementation family — reads reviewer memory to pre-apply known complaints before building"
+    },
+    {
+      "name": "curator",
+      "color": "#F59E0B",
+      "emoji": "📚",
+      "description": "Memory health manager — runs the curation pipeline on demand"
+    }
   ]
 }
