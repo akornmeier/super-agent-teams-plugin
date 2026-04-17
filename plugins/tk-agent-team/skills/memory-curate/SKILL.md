@@ -28,9 +28,9 @@ Run these **in order**. After each stage, estimate the new character count. Stop
 
 ### Stage 2: Score and drop the weakest (lossy)
 
-Score every unprotected item on a 0–10 scale using the rubric in `scoring.md` (in this skill directory). Drop the lowest-scoring items until you are under the soft limit.
+Score every unprotected item on a 0–10 scale using the rubric in `references/scoring.md`. Drop the lowest-scoring items until you are under the soft limit.
 
-**See `scoring.md` for the rubric.** Do not invent your own weights — the rubric is the policy and changing it is a deliberate act, not a per-curation decision.
+**See `references/scoring.md` for the rubric.** Do not invent your own weights — the rubric is the policy and changing it is a deliberate act, not a per-curation decision.
 
 ### Stage 3: Summarize clusters (last resort, lossy with signal preservation)
 

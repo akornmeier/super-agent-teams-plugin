@@ -1,1 +1,5 @@
 logs/
+
+# Claude local/machine-specific files
+.claude/data/
+.claude/settings.local.json
