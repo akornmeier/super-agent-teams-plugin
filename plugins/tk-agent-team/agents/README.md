@@ -46,6 +46,36 @@ knowledge.
 2. Add at least one persona `.md` file using the family slug as `name:`
 3. All personas in the family use `agent_name="<family-name>"` in memory calls
 
+## Agent family registry
+
+| Family | Personas | Memory namespace | Purpose |
+|--------|----------|-----------------|---------|
+| `reviewer` | architecture, correctness, security | `reviewer.yaml` | Code review — catches structural, logic, and security issues |
+| `developer` | frontend, backend | `developer.yaml` | Implementation — builds features using established patterns with cross-family reviewer memory reads |
+| `curator` | (solo) | `curator.yaml` | Memory management — runs the curation pipeline on demand |
+| `planner` | product, technical | `planner.yaml` | Product requirements + technical design; the `technical` persona cross-reads `reviewer.yaml` for standing architectural decisions |
+| `tester` | unit, integration | `tester.yaml` | Unit + integration test authoring; both personas cross-read `developer.yaml` and `reviewer.yaml` for applied patterns and flagged edge cases |
+| `researcher` | (solo) | `researcher.yaml` | Codebase archaeology — maps patterns, dependencies, and constraints; produces context briefs the planner and debugger consume |
+| `debugger` | (solo) | `debugger.yaml` | Root-cause investigation; cross-reads `reviewer.yaml` (known pitfalls) and `researcher.yaml` (context briefs); hands off the fix to `developer` |
+| `docs-writer` | (solo) | `docs-writer.yaml` | Technical writing — READMEs, API refs, and `docs/solutions/` files; cross-reads **every** family's memory |
+| `orchestrator` | (solo — dispatcher) | (no own file — reads all) | Prompt classification + skill routing; the only agent that reads every family memory on every invocation |
+
+### Cross-family memory reads
+
+Cross-family reads are how learnings propagate between teams. The full topology:
+
+| Reader | Own memory | Also reads |
+|--------|-----------|------------|
+| `developer` | `developer.yaml` | `reviewer.yaml` — so reviewers' accumulated complaints become developers' pre-applied fixes |
+| `planner/technical` | `planner.yaml` | `reviewer.yaml` — so standing architectural decisions shape every plan |
+| `tester/unit` | `tester.yaml` | `developer.yaml`, `reviewer.yaml` — so tests mirror applied patterns and cover reviewer-flagged edges |
+| `tester/integration` | `tester.yaml` | `developer.yaml`, `reviewer.yaml` — same reasoning as unit, scoped to cross-service contracts |
+| `debugger` | `debugger.yaml` | `reviewer.yaml`, `researcher.yaml` — past pitfalls and current context brief accelerate root-cause work |
+| `docs-writer` | `docs-writer.yaml` | `planner.yaml`, `tester.yaml`, `researcher.yaml`, `debugger.yaml`, `reviewer.yaml`, `developer.yaml`, `curator.yaml` — sees the whole system to document it |
+| `orchestrator` | (none) | `_shared` plus every family file above — classification decisions get smarter over time |
+
+Solo agents with no listed cross-reads (`researcher`, `curator`) read only their own file plus `_shared.yaml`. Family personas that share a namespace (e.g. all three `reviewer` personas) always read the same family file — so a lesson the security persona learns on Monday is available to the correctness persona on Tuesday.
+
 ## Naming rules
 
 Teammate names must match `^[a-z][a-z0-9-]{0,63}$` (enforced by the MCP

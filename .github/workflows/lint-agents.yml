@@ -1,0 +1,28 @@
+name: Lint Agents
+
+on:
+  pull_request:
+    paths:
+      - "plugins/**/agents/**/*.md"
+      - "plugins/**/skills/**/SKILL.md"
+      - "scripts/lint-agents.sh"
+  push:
+    branches:
+      - main
+    paths:
+      - "plugins/**/agents/**/*.md"
+      - "plugins/**/skills/**/SKILL.md"
+      - "scripts/lint-agents.sh"
+
+jobs:
+  lint:
+    name: Validate agent frontmatter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Make lint script executable
+        run: chmod +x scripts/lint-agents.sh
+
+      - name: Lint agents
+        run: ./scripts/lint-agents.sh plugins/tk-agent-team/agents
