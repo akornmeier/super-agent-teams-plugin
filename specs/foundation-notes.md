@@ -91,6 +91,42 @@ Naming: `<YYYY-MM-DD>-<slug>.md` at every level. Slug is kebab-case derived from
 - **Written by**: `/plan`.
 - **Read by**: `/work`, `/ship`, `/test`.
 
+### `docs/work/`
+- **Purpose**: work session artifacts capturing implementation progress and applied patterns.
+- **Naming**: `<YYYY-MM-DD>-<slug>-work.md`.
+- **Written by**: `/work`.
+- **Read by**: `/review`, `/test`, `/ship`.
+
+### `docs/reviews/`
+- **Purpose**: consolidated code review reports with findings grouped by severity.
+- **Naming**: `<YYYY-MM-DD>-<slug>-review.md`.
+- **Written by**: `/review`.
+- **Read by**: `/work` (autofix mode), `/ship`.
+
+### `docs/tests/`
+- **Purpose**: merged test and coverage-gap reports from unit and integration test runs.
+- **Naming**: `<YYYY-MM-DD>-<slug>-tests.md`.
+- **Written by**: `/test`.
+- **Read by**: `/ship`, `/compound`.
+
+### `docs/ship/`
+- **Purpose**: combined ship/deploy summaries with artifact paths from every sub-skill stage.
+- **Naming**: `<YYYY-MM-DD>-<slug>-ship.md`.
+- **Written by**: `/ship`.
+- **Read by**: `/compound`.
+
+### `docs/compound/`
+- **Purpose**: compound session summaries with curated memory files and solution entries.
+- **Naming**: `<YYYY-MM-DD>-<slug>-compound.md`.
+- **Written by**: `/compound`.
+- **Read by**: orchestrator (for cycle retrospectives).
+
+### `docs/briefs/`
+- **Purpose**: ephemeral orchestrator briefs for bugfix and review dispatches; consumed once then superseded by skill output.
+- **Naming**: `<YYYY-MM-DD>-<slug>-brief.md`.
+- **Written by**: orchestrator.
+- **Read by**: dispatched skill (e.g., `/debug`, `/review`).
+
 ### `docs/solutions/<category>/`
 - **Purpose**: durable record of a solved problem; feeds future routing.
 - **Categories** (canonical): `bug-fixes`, `features`, `refactors`, `integrations`, `performance`, `security`.

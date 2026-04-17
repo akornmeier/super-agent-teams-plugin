@@ -23,7 +23,7 @@ Determine the solution category from `references/categories.md` based on the dri
 - `/debug` cycles → `bug-fixes` (usually already written by `/debug`; docs-writer enriches)
 - Other triggers map via the descriptions in `references/categories.md`
 
-Dispatch `docs-writer` with the driving artifact, cycle sub-artifacts, and `references/solution-schema.md`. Produces `docs/solutions/<category>/<YYYY-MM-DD>-<slug>.md` with sections `## Problem` or `## Motivation`, `## Solution`, `## Related patterns`, `## Applies to`.
+Dispatch `docs-writer` with the driving artifact, cycle sub-artifacts, and `references/solution-schema.md`. Produces `docs/solutions/<category>/<YYYY-MM-DD>-<slug>.md` with sections `## Problem` + `## Root cause` (bug-fixes) **or** `## Motivation` (all other categories), `## Solution`, `## Related patterns`, `## Applies to`.
 
 ### Stage 2: Curate memories (curator)
 

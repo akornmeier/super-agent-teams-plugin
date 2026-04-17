@@ -70,7 +70,7 @@ Overrides:
 
 1. Read `_shared` + every family memory.
 2. Classify the prompt using the decision table (apply overrides).
-3. Write a brief to `docs/<type>/<YYYY-MM-DD>-<slug>.md` — type is `ideation`, `brainstorms`, `plans`, or (for bugfix/review) an ephemeral brief under `docs/briefs/`.
+3. Write a brief to `docs/<type>/<YYYY-MM-DD>-<slug>.md` — type is `ideation`, `brainstorms`, `plans`, or (for bugfix/review) `docs/briefs/` (short-lived task briefs, not long-term project docs).
 4. Dispatch the skill named in the table, passing the brief path as the input artifact.
 5. Receive the skill's structured summary (`artifact_path`, `status`, `memory_appends`, `next_skill_hint`).
 6. Append project-level routing decisions learned this cycle to `_shared`.

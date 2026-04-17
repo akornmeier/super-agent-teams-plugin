@@ -18,7 +18,7 @@ When this plan is complete:
 
 - The plugin exposes nine user-facing slash commands: `/ideate`, `/brainstorm`, `/plan`, `/work`, `/review`, `/test`, `/debug`, `/ship`, `/compound`
 - An `orchestrator` agent exists and is the default dispatcher for every command — it reads shared memory plus the prompt to classify the task and assemble the right team
-- Five new agent definitions are in place: `planner/product.md`, `planner/technical.md`, `researcher.md`, `tester/unit.md`, `tester/integration.md`, `debugger.md`, `docs-writer.md` (seven files across five namespaces)
+- Eight new agent definitions are in place: `orchestrator.md`, `planner/product.md`, `planner/technical.md`, `researcher.md`, `tester/unit.md`, `tester/integration.md`, `debugger.md`, `docs-writer.md` (eight files across six namespaces)
 - Nine `SKILL.md` files define the workflow pipelines and declare which agents they dispatch, which memory files they read, and which artifact files they produce
 - Artifact directory conventions are documented: `docs/ideation/`, `docs/brainstorms/`, `docs/plans/`, `docs/solutions/` — each with a README explaining its purpose and schema
 - `plugin.json` and `marketplace.json` list every new agent and skill with color/emoji/vibe metadata
@@ -78,7 +78,7 @@ Use these files to complete the task:
 
 ### New Files
 
-**Agent definitions (7 files across 5 namespaces):**
+**Agent definitions (8 files across 6 namespaces):**
 
 - `plugins/tk-agent-team/agents/orchestrator.md` — solo agent; reads prompt + every relevant family memory; classifies task; dispatches skills with prepared context
 - `plugins/tk-agent-team/agents/planner/product.md` — family persona; user stories, acceptance criteria, scope questions; writes to `docs/ideation/` and `docs/brainstorms/`
@@ -174,7 +174,7 @@ Wire the pieces together, document, and validate:
   - Resume: true
 - Builder
   - Name: agent-author
-  - Role: Authors every new `.md` agent definition using the existing `_TEMPLATE.md` and the design notes from `architect`. Handles the orchestrator, both planner personas, both tester personas, the researcher, debugger, and docs-writer — seven files in total — with a consistent voice and memory-protocol compliance across all of them.
+  - Role: Authors every new `.md` agent definition using the existing `_TEMPLATE.md` and the design notes from `architect`. Handles the orchestrator, both planner personas, both tester personas, the researcher, debugger, and docs-writer — eight files in total — with a consistent voice and memory-protocol compliance across all of them.
   - Agent Type: meta-agent
   - Resume: true
 - Builder
@@ -476,7 +476,7 @@ Wire the pieces together, document, and validate:
 - **Assigned To**: validator
 - **Agent Type**: code-review
 - **Parallel**: false
-- Run `bash scripts/lint-agents.sh` — must exit 0 with zero errors across all thirteen agent files (six existing + seven new).
+- Run `bash scripts/lint-agents.sh` — must exit 0 with zero errors across all fourteen agent files (six existing + eight new).
 - Run `cd plugins/tk-agent-team/mcp-servers/agent-substrate && pytest` — must pass unchanged (this plan does not modify the substrate).
 - Validate JSON: `python -c "import json; json.load(open('plugins/tk-agent-team/.claude-plugin/plugin.json')); json.load(open('.claude-plugin/marketplace.json'))"`.
 - Grep for dangling references: every agent name referenced in a `SKILL.md` must correspond to a real agent file.
@@ -490,7 +490,7 @@ Wire the pieces together, document, and validate:
 - `pytest` in the MCP server directory passes with no regressions
 - `python -c "import json; json.load(open('plugins/tk-agent-team/.claude-plugin/plugin.json'))"` succeeds
 - `python -c "import json; json.load(open('.claude-plugin/marketplace.json'))"` succeeds
-- All seven new agent files exist, each under 6000 chars of body text, each following the 8-section template
+- All eight new agent files exist, each under 6000 chars of body text, each following the 8-section template
 - All nine new `SKILL.md` files exist, each following the `memory-curate/SKILL.md` structure (frontmatter + inputs + stages + invariants + write-back)
 - `plugin.json` version is bumped to `0.2.0`
 - `plugin.json` and `marketplace.json` register every new agent and skill with color + emoji metadata
@@ -511,7 +511,7 @@ Execute these commands to validate the task is complete:
 - `python -c "import json; json.load(open('.claude-plugin/marketplace.json'))"` — confirms marketplace manifest parses
 - `ls -d docs/ideation docs/brainstorms docs/plans docs/solutions` — confirms all four artifact directories exist
 - `find plugins/tk-agent-team/skills -name SKILL.md | wc -l` — expected output: `10` (one existing memory-curate + nine new)
-- `find plugins/tk-agent-team/agents -name '*.md' -not -name '_*' -not -name 'README.md' | wc -l` — expected output: `13` (six existing + seven new)
+- `find plugins/tk-agent-team/agents -name '*.md' -not -name '_*' -not -name 'README.md' | wc -l` — expected output: `14` (six existing + eight new)
 - `grep -rl 'name: orchestrator' plugins/tk-agent-team/agents/` — expected to find exactly one file
 - `grep -rln 'mcp__agent-substrate' plugins/tk-agent-team/agents/ | wc -l` — expected: every new agent file appears (proves memory protocol is included)
 - Manual: open `examples/workflow-ideate-to-ship.md` and confirm every agent and skill named corresponds to a real file

@@ -4,12 +4,14 @@ on:
   pull_request:
     paths:
       - "plugins/**/agents/**/*.md"
+      - "plugins/**/skills/**/SKILL.md"
       - "scripts/lint-agents.sh"
   push:
     branches:
       - main
     paths:
       - "plugins/**/agents/**/*.md"
+      - "plugins/**/skills/**/SKILL.md"
       - "scripts/lint-agents.sh"
 
 jobs:

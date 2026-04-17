@@ -232,9 +232,6 @@ Output: new test files plus a coverage gap report (zero gaps — all 4 ACs cover
 ```markdown
 # User profiles with avatar upload
 
-## Problem
-Users had no way to edit displayName or avatarUrl. No profile surface existed.
-
 ## Motivation
 Highest-scored idea from ideation; unblocks personalization without requiring new data model work.
 
@@ -262,7 +259,7 @@ Curation runs against `planner`, `developer`, `reviewer`, `tester`, `researcher`
 | `/ideate` | `docs/ideation/2026-04-17-user-profiles.md` | `planner`, `researcher` |
 | `/brainstorm` | `docs/brainstorms/2026-04-17-user-profiles-requirements.md` | `planner` |
 | `/plan` | `docs/plans/2026-04-17-user-profiles-plan.md` | `planner`, `reviewer` |
-| `/work` | (code + unit tests committed) | `developer` |
+| `/work` | (code + unit tests staged, uncommitted) | `developer` |
 | `/review` | (report returned inline) | `reviewer` |
 | `/test` | (test files + coverage report) | `tester` |
 | `/compound` | `docs/solutions/features/2026-04-17-user-profiles.md` | `docs-writer`, plus `curator` consolidation of every touched family |

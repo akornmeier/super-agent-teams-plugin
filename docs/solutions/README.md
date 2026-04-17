@@ -31,15 +31,23 @@ docs/solutions/<category>/<YYYY-MM-DD>-<slug>.md
 
 ## Required sections
 
-Every solution artifact must contain the following top-level sections, in
-order:
+Required top-level sections depend on the solution category.
 
-- `## Problem`
-- `## Root cause` — **or** `## Motivation` for non-bug categories
-  (features, refactors, integrations, performance, security).
-- `## Solution`
-- `## Related patterns`
-- `## Applies to`
+**Bug-fix entries** (`bug-fixes/`):
+
+1. `## Problem`
+2. `## Root cause`
+3. `## Solution`
+4. `## Related patterns`
+5. `## Applies to`
+
+**All other categories** (features, refactors, integrations, performance,
+security):
+
+1. `## Motivation`
+2. `## Solution`
+3. `## Related patterns`
+4. `## Applies to`
 
 ## Written by
 

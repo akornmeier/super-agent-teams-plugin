@@ -131,7 +131,7 @@ The fix is committed.
 
 ## Step 6 — `/debug` writes the solution artifact
 
-`/debug` completes by writing the full record — prompt, context, hypothesis, verdict, fix — to the canonical bug-fix path. This is a `docs/solutions/` side-effect of `/debug`; no separate `/compound` is required for a bug.
+`/debug` completes by writing the full record — prompt, context, hypothesis, verdict, fix — to the canonical bug-fix path. Writing the `docs/solutions/bug-fixes/` artifact is a direct side-effect of `/debug`. However, `/compound` should still be run after `/debug` to curate the memories that were appended across all affected agent families during the session (researcher, debugger, reviewer, developer).
 
 **Artifact:** `docs/solutions/bug-fixes/2026-04-17-display-name-update.md`
 
