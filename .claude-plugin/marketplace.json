@@ -1,0 +1,28 @@
+{
+  "name": "tk-agent-team",
+  "owner": {
+    "name": "Tony Kornmeier",
+    "url": "https://github.com/tk"
+  },
+  "metadata": {
+    "description": "Plugin marketplace for Claude Code agent team extensions",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "tk-agent-team",
+      "description": "Build durable Agent Teams with per-agent YAML memory. Each teammate reads context at task start and appends learnings at task end — so every task makes the team smarter.",
+      "author": {
+        "name": "Tony Kornmeier"
+      },
+      "tags": [
+        "agent-teams",
+        "memory",
+        "mcp",
+        "curation",
+        "knowledge-management"
+      ],
+      "source": "./plugins/tk-agent-team"
+    }
+  ]
+}
