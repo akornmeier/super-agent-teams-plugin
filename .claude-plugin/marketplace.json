@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Plugin marketplace for Claude Code agent team extensions",
-    "version": "0.1.0"
+    "version": "0.2.0"
   },
   "plugins": [
     {
@@ -42,6 +42,38 @@
             "name": "curator",
             "color": "#F59E0B",
             "emoji": "📚"
+          },
+          {
+            "name": "orchestrator",
+            "color": "#EC4899",
+            "emoji": "🧭"
+          },
+          {
+            "name": "planner",
+            "personas": ["product", "technical"],
+            "color": "#8B5CF6",
+            "emoji": "📋"
+          },
+          {
+            "name": "researcher",
+            "color": "#14B8A6",
+            "emoji": "🔬"
+          },
+          {
+            "name": "tester",
+            "personas": ["unit", "integration"],
+            "color": "#10B981",
+            "emoji": "🧪"
+          },
+          {
+            "name": "debugger",
+            "color": "#EF4444",
+            "emoji": "🐛"
+          },
+          {
+            "name": "docs-writer",
+            "color": "#F97316",
+            "emoji": "📝"
           }
         ]
       },

@@ -1,6 +1,6 @@
 {
   "name": "tk-agent-team",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Opinionated Claude Code Agent Teams plugin with durable per-agent YAML memory, a curator skill, and extensible domain specialist teammates.",
   "author": {
     "name": "Asbury Labs"
@@ -39,6 +39,88 @@
       "color": "#F59E0B",
       "emoji": "📚",
       "description": "Memory health manager — runs the curation pipeline on demand"
+    },
+    {
+      "name": "orchestrator",
+      "color": "#EC4899",
+      "emoji": "🧭",
+      "description": "Routing dispatcher — classifies prompts, pre-loads memory, hands off to the right skill"
+    },
+    {
+      "name": "planner",
+      "family": true,
+      "personas": ["product", "technical"],
+      "color": "#8B5CF6",
+      "emoji": "📋",
+      "description": "Two-persona planning family — product requirements and technical design"
+    },
+    {
+      "name": "researcher",
+      "color": "#14B8A6",
+      "emoji": "🔬",
+      "description": "Read-only codebase archaeologist producing context briefs"
+    },
+    {
+      "name": "tester",
+      "family": true,
+      "personas": ["unit", "integration"],
+      "color": "#10B981",
+      "emoji": "🧪",
+      "description": "Two-persona testing family — unit coverage and integration scenarios"
+    },
+    {
+      "name": "debugger",
+      "color": "#EF4444",
+      "emoji": "🐛",
+      "description": "Root-cause investigator — reproduces failures and hypothesizes causes, hands off to developer for fix"
+    },
+    {
+      "name": "docs-writer",
+      "color": "#F97316",
+      "emoji": "📝",
+      "description": "Technical writer authoring READMEs, API docs, and /compound solution records"
+    }
+  ],
+  "skills": [
+    {
+      "name": "memory-curate",
+      "description": "Use when an agent's memory file exceeds the soft or hard limit — runs dedupe, score-and-drop, summarize stages to shrink under the soft limit."
+    },
+    {
+      "name": "ideate",
+      "description": "Use when the user asks to explore options or brainstorm directions for a fuzzy problem — produces 3–5 ranked scored ideas with tradeoffs and a recommendation."
+    },
+    {
+      "name": "brainstorm",
+      "description": "Use when the user has selected an idea and needs it expanded into user stories and Given/When/Then acceptance criteria."
+    },
+    {
+      "name": "plan",
+      "description": "Use when requirements exist or the user asks for a technical design, ADR, or implementation plan — produces a plan doc reviewed for standing-decision conflicts."
+    },
+    {
+      "name": "work",
+      "description": "Use when an approved plan doc exists and the user wants code written — classifies frontend/backend/full-stack and dispatches developer personas in parallel."
+    },
+    {
+      "name": "review",
+      "description": "Use when code has been written and needs multi-lens critique — runs architecture, correctness, and security reviewers in parallel and merges findings."
+    },
+    {
+      "name": "test",
+      "description": "Use when new code needs test coverage — runs unit and integration testers in parallel, writes test files, and produces a merged coverage-gap report."
+    },
+    {
+      "name": "debug",
+      "description": "Use when a bug, stack trace, or regression is reported — runs researcher → debugger → reviewer → developer and writes a durable bug-fix solution doc."
+    },
+    {
+      "name": "ship",
+      "description": "Use when the user wants a plan taken to implemented+reviewed+tested in one shot — composite skill running /work → /review → /test with halt-on-blocker."
+    },
+    {
+      "name": "compound",
+      "description": "Use at the end of a full cycle to harvest the run into durable signal — writes a solution doc and curates every family memory touched during the cycle."
     }
   ]
 }

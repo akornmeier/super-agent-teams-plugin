@@ -98,7 +98,61 @@ A family is a directory under `agents/` where all personas share a memory namesp
 2. Create personas: each file sets `name: your-family` in frontmatter (matching the directory)
 3. Update the `agents/README.md` family registry
 
-Family memory is pooled — all personas read and write to `your-family.yaml`. Design the personas to cover complementary concerns, not overlapping ones.
+Family memory is pooled — all personas read and write to `your-family.yaml`. Design the personas to cover **complementary** concerns, not overlapping ones. Good examples to copy:
+
+- `planner/` — `product.md` (user stories + acceptance criteria) and `technical.md` (ADRs + migration steps) split the planning surface so one persona never duplicates the other.
+- `tester/` — `unit.md` (single-component coverage) and `integration.md` (cross-service contracts) similarly partition testing without overlap.
+
+When you add a new family, declare any cross-family memory reads explicitly in each persona's `## Memory protocol` section — the new `planner/technical` persona reads `reviewer.yaml`, and the new `tester` personas read both `developer.yaml` and `reviewer.yaml`. Follow that pattern whenever a family's work depends on another's accumulated knowledge.
+
+---
+
+## Creating a new skill
+
+Skills live under `plugins/tk-agent-team/skills/<skill-name>/SKILL.md`. A skill is the workflow glue that dispatches agents, threads artifacts between them, and guarantees memory updates. Use `plugins/tk-agent-team/skills/memory-curate/SKILL.md` as the canonical example.
+
+### 1. Frontmatter
+
+Only two fields are required. The linter enforces both.
+
+```yaml
+---
+name: your-skill
+description: When to invoke this skill, what it expects as input, and what it produces. One paragraph.
+---
+```
+
+Keep the `description` specific about inputs and output artifacts — the orchestrator reads it to decide whether to dispatch.
+
+### 2. Body structure
+
+Every SKILL.md follows the same four-part spine:
+
+1. **Inputs you will be given** — a bulleted list naming every field the orchestrator passes in the brief file (user prompt, pre-loaded memory excerpts, input artifact path). Match the skill-dispatch contract in `specs/foundation-notes.md`.
+2. **Stages** — numbered stages, each naming the agent(s) dispatched, what they produce, and how their output feeds the next stage. Stages run in order unless explicitly marked parallel.
+3. **Write-back** — the canonical output artifact path (e.g. `docs/plans/<YYYY-MM-DD>-<slug>-plan.md`) and the structured summary format (`artifact_path`, `status`, `memory_appends`, `next_skill_hint`).
+4. **Invariants** — non-negotiable guarantees. Every skill must: produce a single output artifact, return a structured summary, and have every dispatched agent append memory before returning.
+
+### 3. Add a `references/*.md` file when
+
+Reach for a reference doc only when the skill encodes a tunable rubric or a required schema:
+
+- Tunable rubric — a scoring policy the team should be able to edit without changing the skill's prose (see `memory-curate/references/scoring.md` and `ideate/references/rubric.md`).
+- Required schema — a canonical list of sections or categories the skill must emit (see `plan/references/plan-schema.md` and `compound/references/categories.md`).
+
+If your skill has neither, skip the `references/` directory. Adding a file "just in case" creates drift.
+
+### 4. Register the skill
+
+Add the skill to `plugins/tk-agent-team/.claude-plugin/plugin.json` under the `skills:` key (and mirror the entry in `.claude-plugin/marketplace.json`). Include `name`, `description`, and any display metadata the existing skills use.
+
+### 5. Validate
+
+```bash
+./scripts/lint-agents.sh
+```
+
+The linter checks that every `SKILL.md` has the required frontmatter and warns if a skill references an agent name that doesn't exist under `agents/`. Fix any errors before opening the PR.
 
 ---
 
