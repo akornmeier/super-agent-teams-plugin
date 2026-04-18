@@ -74,6 +74,30 @@
             "name": "docs-writer",
             "color": "#F97316",
             "emoji": "📝"
+          },
+          {
+            "name": "design",
+            "personas": ["ui-designer", "ux-researcher", "ux-architect", "brand-guardian"],
+            "color": "#D946EF",
+            "emoji": "🎨"
+          },
+          {
+            "name": "framework",
+            "personas": ["react", "vue", "motion", "astro"],
+            "color": "#22D3EE",
+            "emoji": "🧩"
+          },
+          {
+            "name": "engineering",
+            "personas": ["devops", "sre", "data-engineer", "ai-engineer"],
+            "color": "#0EA5E9",
+            "emoji": "🛠️"
+          },
+          {
+            "name": "marketing",
+            "personas": ["content-creator", "growth-hacker", "seo-specialist", "social-strategist"],
+            "color": "#F43F5E",
+            "emoji": "📣"
           }
         ]
       },

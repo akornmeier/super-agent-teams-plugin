@@ -12,7 +12,7 @@ SKILLS_DIR="${SKILLS_DIR:-plugins/tk-agent-team/skills}"
 REQUIRED_FIELDS=("name" "description" "tools" "color" "emoji" "vibe")
 RECOMMENDED_SECTIONS=("Memory protocol" "Core mission" "Critical rules" "Workflow process" "Communication style" "Success metrics")
 SKILL_REQUIRED_FIELDS=("name" "description")
-KNOWN_FAMILY_SLUGS=("orchestrator" "planner" "tester" "researcher" "debugger" "docs-writer" "reviewer" "developer" "curator")
+KNOWN_FAMILY_SLUGS=("orchestrator" "planner" "tester" "researcher" "debugger" "docs-writer" "reviewer" "developer" "curator" "design" "framework" "engineering" "marketing")
 
 errors=0
 warnings=0
