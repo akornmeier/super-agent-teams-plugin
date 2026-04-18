@@ -1,6 +1,6 @@
 {
   "name": "tk-agent-team",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Opinionated Claude Code Agent Teams plugin with durable per-agent YAML memory, a curator skill, and extensible domain specialist teammates.",
   "author": {
     "name": "Asbury Labs"
@@ -79,6 +79,38 @@
       "color": "#F97316",
       "emoji": "📝",
       "description": "Technical writer authoring READMEs, API docs, and /compound solution records"
+    },
+    {
+      "name": "design",
+      "family": true,
+      "personas": ["ui-designer", "ux-researcher", "ux-architect", "brand-guardian"],
+      "color": "#D946EF",
+      "emoji": "🎨",
+      "description": "Four-persona design family — visual systems, research, IA, and brand coherence sharing a memory namespace"
+    },
+    {
+      "name": "framework",
+      "family": true,
+      "personas": ["react", "vue", "motion", "astro"],
+      "color": "#22D3EE",
+      "emoji": "🧩",
+      "description": "Four-persona framework family — React, Vue, motion.dev/Framer Motion, and Astro specialists for idiomatic framework-deep work"
+    },
+    {
+      "name": "engineering",
+      "family": true,
+      "personas": ["devops", "sre", "data-engineer", "ai-engineer"],
+      "color": "#0EA5E9",
+      "emoji": "🛠️",
+      "description": "Four-persona platform family — DevOps, SRE, data, and AI engineering complementing the developer/reviewer families"
+    },
+    {
+      "name": "marketing",
+      "family": true,
+      "personas": ["content-creator", "growth-hacker", "seo-specialist", "social-strategist"],
+      "color": "#F43F5E",
+      "emoji": "📣",
+      "description": "Four-persona marketing family — content, growth experimentation, SEO, and cross-platform social"
     }
   ],
   "skills": [
