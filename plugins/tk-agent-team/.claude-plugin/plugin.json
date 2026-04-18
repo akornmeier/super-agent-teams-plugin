@@ -1,6 +1,6 @@
 {
   "name": "tk-agent-team",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Opinionated Claude Code Agent Teams plugin with durable per-agent YAML memory, a curator skill, and extensible domain specialist teammates.",
   "author": {
     "name": "Asbury Labs"
