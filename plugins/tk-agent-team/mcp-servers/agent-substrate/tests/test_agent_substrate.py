@@ -280,7 +280,7 @@ class TestWrite:
         assert read_result.parsed["updated"] != old_ts
 
     def test_rejects_at_hard_limit(self, storage):
-        # 100 patterns at ~250 chars each = ~25000 chars, well over 8000
+        # 100 patterns at ~250 chars each = ~25000 chars, well over HARD_LIMIT
         big_patterns = [
             {"id": f"pattern-{i:04d}", "summary": "X" * 200} for i in range(100)
         ]
@@ -298,15 +298,15 @@ class TestWrite:
         assert "hard limit" in (result.error or "").lower()
 
     def test_warns_at_soft_limit(self, storage):
-        # Aim for between SOFT_LIMIT and HARD_LIMIT
-        # Each pattern is ~110 chars when serialized canonically
-        # 60 patterns ~ 6600 chars, between 6000 and 8000
+        # Aim for between SOFT_LIMIT and HARD_LIMIT.
+        # Each pattern is ~110 chars when serialized canonically;
+        # 80 patterns ~ 8800 chars, between 8000 and 10000.
         big_patterns = [
             {
                 "id": f"pat-{i:04d}",
                 "summary": "A reasonable-length summary describing a pattern",
             }
-            for i in range(60)
+            for i in range(80)
         ]
         content = yaml.safe_dump(
             {
@@ -422,7 +422,7 @@ class TestAppend:
                 "patterns": big_patterns,
             }
         )
-        # First write: should succeed (~6500 chars)
+        # First write: should succeed (~7500 chars, under HARD_LIMIT)
         result = storage.write("agent-a", content)
         # Now append more until we hit the limit
         for i in range(50):
