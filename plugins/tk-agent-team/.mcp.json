@@ -2,8 +2,13 @@
   "mcpServers": {
     "agent-substrate": {
       "type": "stdio",
-      "command": "python",
-      "args": ["-m", "agent_substrate"],
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "${CLAUDE_PLUGIN_ROOT}/mcp-servers/agent-substrate",
+        "agent-substrate"
+      ],
       "env": {
         "AGENT_SUBSTRATE_BASE_DIR": "${CLAUDE_PROJECT_DIR}/.agent-memory"
       }
