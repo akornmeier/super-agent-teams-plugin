@@ -5,20 +5,30 @@ description: Use when an agent's memory file has exceeded the soft or hard chara
 
 # memory-curate
 
-You are curating an agent's YAML memory file. The storage layer is dumb; **you are the policy**. Your job is to shrink the file below the 6000-character soft limit while losing as little real signal as possible.
+You are curating an agent's YAML memory file. The storage layer is dumb; **you are the policy**. Your job is to shrink the file below the 8000-character soft limit while losing as little real signal as possible.
 
 ## Inputs you will be given
 
 - `agent_name` — the slug of the agent whose memory is being curated (or the literal string `_shared` for the shared file)
-- Optionally: the last error from the MCP server (e.g. `"Memory exceeds hard limit (8213 > 8000 chars)"`)
+- Optionally: the last error from the MCP server (e.g. `"Memory exceeds hard limit (10243 > 10000 chars)"`)
 
-## Read the current state
+## Memory protocol (skill layer)
 
-Call `mcp__agent-substrate__memory_read` with the `agent_name` (or `memory_read_shared` for the shared file). Parse the YAML. Note the current `char_count` and decide how much you need to trim. Target: **under 6000 chars after curation**, not merely under 8000.
+This skill handles its own memory read/write cycle entirely at the skill layer. The curator subagent does NOT have MCP tool access.
 
-## The three stages
+**Before dispatching the curator subagent:**
+1. Call `mcp__agent-substrate__memory_read(agent_name=TARGET)` (or `mcp__agent-substrate__memory_read_shared()` if `agent_name` is `_shared`) to get the current YAML content
+2. Note the `char_count` and determine how much needs to be trimmed (target: under 8000 chars)
+3. Pass the full YAML content to the curator subagent under `## Current memory YAML` in its prompt
 
-Run these **in order**. After each stage, estimate the new character count. Stop as soon as you're under the soft limit. Never skip a stage — even if you think you're close, run dedupe first because it is loss-free.
+**After the curator subagent returns:**
+1. Extract the curated YAML from the `## Curated YAML` section of the curator's response
+2. Call `mcp__agent-substrate__memory_write(agent_name=TARGET, content=CURATED_YAML)` to save
+3. If the write still returns `needs_curation: true`, report failure to the orchestrator with a diagnostic — do not truncate
+
+## The three stages (curator subagent instructions)
+
+The curator subagent receives the full YAML content and performs these stages, returning the curated YAML. Run these **in order**. After each stage, estimate the new character count. Stop as soon as you're under the soft limit. Never skip a stage — even if you think you're close, run dedupe first because it is loss-free.
 
 ### Stage 1: Dedupe and consolidate (loss-free)
 
@@ -40,9 +50,15 @@ If stages 1–2 can't get you under the soft limit without dropping protected it
 - Never summarize across sections (never merge a `pattern` with a `pitfall`).
 - Never summarize protected items.
 
+## Curator subagent output format
+
+The curator subagent must return its response with these sections:
+1. `## Curation summary` — what was deduped, dropped, or summarized, and the resulting char count
+2. `## Curated YAML` — the complete curated YAML content, ready to be written back via `memory_write`
+
 ## Write back
 
-Call `mcp__agent-substrate__memory_write` with the curated YAML. If the write still returns `needs_curation: true`, you have a bug in your stage-3 summarization; do not truncate — report the failure to the orchestrator with a diagnostic.
+This skill (not the subagent) calls `mcp__agent-substrate__memory_write(agent_name=TARGET, content=CURATED_YAML)` with the curated YAML extracted from the curator's response. If the write still returns `needs_curation: true`, you have a bug in the curator's stage-3 summarization; do not truncate — report the failure to the orchestrator with a diagnostic.
 
 ## Invariants (never violate)
 

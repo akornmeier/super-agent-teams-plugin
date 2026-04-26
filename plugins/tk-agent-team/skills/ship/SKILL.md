@@ -1,6 +1,6 @@
 ---
 name: ship
-description: Use when the user wants a plan taken to implemented+reviewed+tested in one shot ("ship it", "full cycle", "end-to-end", "take the plan to green"). Composite skill that runs `/work` → `/review` → `/test` sequentially with halt-on-blocker behavior and a single autofix retry. Guarantees every dispatched agent across sub-skills appends to its family memory before returning.
+description: Use when the user wants a plan taken to implemented+reviewed+tested in one shot ("ship it", "full cycle", "end-to-end", "take the plan to green"). Composite skill that runs `/work` → `/review` → `/test` sequentially with halt-on-blocker behavior and a single autofix retry. Sub-skills handle their own memory reads/writes at the skill layer via MCP tools.
 ---
 
 # ship
@@ -10,8 +10,13 @@ You are the composite cycle. You do not dispatch agents directly — you dispatc
 ## Inputs you will be given
 
 - **User prompt** (verbatim) under `## Original prompt` in the brief file.
-- **Pre-loaded memory excerpts** — the sub-skills load their own family memories; this skill needs only `_shared` for flow-control context.
 - **Input artifact path** — a `docs/plans/<YYYY-MM-DD>-<slug>-plan.md` file. Required. Absence = `status: blocked`.
+
+## Memory protocol (skill layer)
+
+This is a composite skill that dispatches other skills (`/work`, `/review`, `/test`). Each sub-skill handles its own memory reads and writes per its own `## Memory protocol (skill layer)` section. This skill does NOT read or write memory directly — it delegates that responsibility to the sub-skills it invokes.
+
+The only memory-related responsibility of `/ship` is to confirm that each sub-skill's `memory_appends` list is non-empty in its returned summary. If a sub-skill returns an empty `memory_appends`, log a warning.
 
 ## Stages
 
@@ -57,7 +62,7 @@ next_skill_hint: /compound
 
 ## Invariants (never violate)
 
-- Every dispatched agent across every sub-skill must have appended to its family memory before this skill returns (sub-skills enforce this; `/ship` only confirms it from each sub-skill's `memory_appends`).
+- Each sub-skill (`/work`, `/review`, `/test`) must persist its subagents' memory findings via `memory_append` before returning. `/ship` confirms this by checking each sub-skill's `memory_appends` list is non-empty. If a sub-skill returns an empty list, log a warning.
 - Halt-on-blocker is strict: never run `/test` against a diff with unresolved review blockers.
 - Autofix retry is limited to **one pass** in stage 2. A second oscillation is always `status: blocked`.
 - Never invoke sub-skills in parallel — the pipeline order `/work → /review → /test` is load-bearing.
