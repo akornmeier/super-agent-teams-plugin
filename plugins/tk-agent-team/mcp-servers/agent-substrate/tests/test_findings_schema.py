@@ -192,6 +192,7 @@ class TestTranslation:
             "summary": "virt large tables",
             "evidence": "dashboard render +80%",
             "related": None,
+            "lens": None,
             "protected": False,
         }
 
@@ -209,6 +210,7 @@ class TestTranslation:
             "summary": "don't use aria-live=assertive",
             "why": "interrupts screen reader flow",
             "related": None,
+            "lens": None,
             "protected": True,
         }
 
@@ -315,6 +317,12 @@ _ROUND_TRIP_FIXTURES = [
         id="pattern-related",
     ),
     pytest.param(
+        "pattern", "patterns", "developer-frontend",
+        "use react-virtual for tables > 500 rows",
+        {"id": "virt-tables-lens", "lens": "reviewer-architecture"},
+        id="pattern-lens",
+    ),
+    pytest.param(
         "pitfall", "pitfalls", "reviewer-security",
         "hard-coded credentials in auth.py",
         {"id": "hard-coded-creds", "evidence": "auth.py:42", "why": "rotates with deploys"},
@@ -331,6 +339,12 @@ _ROUND_TRIP_FIXTURES = [
         "secrets in logs",
         {"id": "secrets-in-logs", "related": ["creds-via-env"]},
         id="pitfall-related",
+    ),
+    pytest.param(
+        "pitfall", "pitfalls", "reviewer-security",
+        "secrets in logs",
+        {"id": "secrets-in-logs-lens", "lens": "reviewer-security"},
+        id="pitfall-lens",
     ),
     pytest.param(
         "decision", "decisions", "reviewer-security",
@@ -351,6 +365,12 @@ _ROUND_TRIP_FIXTURES = [
         id="decision-related",
     ),
     pytest.param(
+        "decision", "decisions", "reviewer-security",
+        "creds via env",
+        {"id": "creds-via-env-lens", "lens": "reviewer-architecture"},
+        id="decision-lens",
+    ),
+    pytest.param(
         "open_question", "open_questions", "researcher",
         "rsc-strategy",
         {"id": "rsc-strategy", "question": "should we use React Server Components?"},
@@ -367,6 +387,12 @@ _ROUND_TRIP_FIXTURES = [
         "ssr-strategy",
         {"id": "ssr-strategy", "related": ["rsc-strategy"]},
         id="open-question-related",
+    ),
+    pytest.param(
+        "open_question", "open_questions", "researcher",
+        "rsc-strategy-lens",
+        {"id": "rsc-strategy-lens", "lens": "reviewer-architecture"},
+        id="open-question-lens",
     ),
 ]
 
@@ -416,6 +442,10 @@ def test_findings_round_trip(storage, kind, section, agent, summary, extras):
     # `related` must survive byte-for-byte (or be None on both sides).
     expected_related = extras.get("related")
     assert stored.get("related") == expected_related
+
+    # `lens` must survive byte-for-byte (or be None on both sides).
+    expected_lens = extras.get("lens")
+    assert stored.get("lens") == expected_lens
 
 
 def test_findings_round_trip_full_batch(storage):
@@ -578,3 +608,166 @@ def test_yaml_serializes_related_list(storage):
 
     parsed = storage.read("developer-frontend").parsed
     assert parsed["patterns"][0]["related"] == ["item-a", "item-b"]
+
+
+# ============================================================================
+# Lens-field unit tests on the per-section models (Task 20)
+# ============================================================================
+
+
+class TestLensFieldOnSectionModels:
+    """`lens: str | None` was added to all four per-section models in
+    Task 20 to capture the running-teammate slug from `parallel-panel` skills.
+    These tests pin the contract: str accepted, None default, round-trips
+    through YAML, and `extra="forbid"` still rejects unknown fields.
+    """
+
+    def test_pattern_constructs_with_lens(self):
+        from agent_substrate.schema import Pattern
+
+        p = Pattern(id="x", summary="y", lens="reviewer-architecture")
+        assert p.lens == "reviewer-architecture"
+
+    def test_pitfall_constructs_with_lens(self):
+        from agent_substrate.schema import Pitfall
+
+        p = Pitfall(id="x", summary="y", lens="reviewer-security")
+        assert p.lens == "reviewer-security"
+
+    def test_decision_constructs_with_lens(self):
+        from agent_substrate.schema import Decision
+
+        d = Decision(id="x", choice="y", lens="reviewer-architecture")
+        assert d.lens == "reviewer-architecture"
+
+    def test_open_question_constructs_with_lens(self):
+        from agent_substrate.schema import OpenQuestion
+
+        q = OpenQuestion(id="x", question="y?", lens="reviewer-architecture")
+        assert q.lens == "reviewer-architecture"
+
+    def test_pattern_model_dump_round_trips_through_yaml(self):
+        import yaml
+
+        from agent_substrate.schema import Pattern
+
+        p = Pattern(id="x", summary="y", lens="reviewer-architecture")
+        dumped = yaml.safe_dump(p.model_dump(exclude_none=False), sort_keys=False)
+        reloaded = yaml.safe_load(dumped)
+        p2 = Pattern.model_validate(reloaded)
+        assert p2 == p
+        assert p2.lens == "reviewer-architecture"
+
+    def test_lens_defaults_to_none(self):
+        from agent_substrate.schema import (
+            Decision,
+            OpenQuestion,
+            Pattern,
+            Pitfall,
+        )
+
+        assert Pattern(id="x", summary="y").lens is None
+        assert Pitfall(id="x", summary="y").lens is None
+        assert Decision(id="x", choice="y").lens is None
+        assert OpenQuestion(id="x", question="y?").lens is None
+
+    def test_finding_item_accepts_lens(self):
+        from agent_substrate.schema import FindingItem
+
+        item = FindingItem(
+            kind="pattern", summary="y", lens="reviewer-architecture"
+        )
+        assert item.lens == "reviewer-architecture"
+
+    def test_finding_item_lens_defaults_to_none(self):
+        from agent_substrate.schema import FindingItem
+
+        assert FindingItem(kind="pattern", summary="y").lens is None
+
+
+def test_finding_item_persists_lens_via_submit(storage):
+    """Submitting a Finding with `item.lens` set must persist and read back."""
+    finding = {
+        "agent": "reviewer-security",
+        "section": "pitfalls",
+        "item": {
+            "kind": "pitfall",
+            "summary": "secrets in logs",
+            "id": "secrets-in-logs-persist",
+            "lens": "reviewer-security",
+        },
+    }
+    _submit_via_helper(storage, [finding])
+
+    parsed = storage.read("reviewer-security").parsed
+    assert parsed["pitfalls"][0]["lens"] == "reviewer-security"
+
+
+def test_yaml_serializes_none_lens_as_null(storage):
+    """On-disk YAML must contain `lens: null` (not omitted) when None.
+
+    Mirrors the `related: null` guard — `_serialize` calls
+    `model_dump(exclude_none=False)`, so None lands in the file as an explicit
+    `null`. Guards against future drift toward `exclude_none=True`.
+    """
+    finding = {
+        "agent": "developer-frontend",
+        "section": "patterns",
+        "item": {"kind": "pattern", "summary": "no lens set", "id": "p-no-lens"},
+    }
+    _submit_via_helper(storage, [finding])
+
+    yaml_path = storage.base_dir / "developer-frontend.yaml"
+    raw = yaml_path.read_text(encoding="utf-8")
+    assert "lens: null" in raw, (
+        f"expected `lens: null` in serialized YAML, got:\n{raw}"
+    )
+
+
+def test_extra_field_still_rejected_after_lens_addition():
+    """Regression guard: adding `lens` must not relax `extra=forbid`.
+
+    A field that is NOT `lens` (and not in the schema) must still be rejected
+    by the `model_config = ConfigDict(extra="forbid")` on FindingItem and on
+    each per-section model.
+    """
+    from agent_substrate.schema import (
+        Decision,
+        FindingItem,
+        OpenQuestion,
+        Pattern,
+        Pitfall,
+    )
+
+    # FindingItem still rejects unknown fields.
+    with pytest.raises(ValidationError):
+        FindingItem.model_validate(
+            {"kind": "pattern", "summary": "y", "severity": "high"}
+        )
+
+    # Per-section models still reject unknown fields.
+    with pytest.raises(ValidationError):
+        Pattern.model_validate({"id": "x", "summary": "y", "severity": "high"})
+    with pytest.raises(ValidationError):
+        Pitfall.model_validate({"id": "x", "summary": "y", "severity": "high"})
+    with pytest.raises(ValidationError):
+        Decision.model_validate({"id": "x", "choice": "y", "severity": "high"})
+    with pytest.raises(ValidationError):
+        OpenQuestion.model_validate(
+            {"id": "x", "question": "y?", "severity": "high"}
+        )
+
+    # And the full Finding still rejects unknowns at the item level.
+    with pytest.raises(ValidationError):
+        Finding.model_validate(
+            {
+                "agent": "x",
+                "section": "patterns",
+                "item": {
+                    "kind": "pattern",
+                    "summary": "y",
+                    "lens": "reviewer-architecture",
+                    "bogus": True,
+                },
+            }
+        )
