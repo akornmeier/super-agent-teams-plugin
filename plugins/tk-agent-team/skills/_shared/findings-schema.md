@@ -7,6 +7,12 @@
 
 The wire format for `mcp__agent-substrate__memory_findings_submit`. Every teammate submits findings against this schema. Validation is enforced at the substrate boundary; invalid findings are rejected loudly with an actionable error (not silently dropped — that was the v0.3 prose-parsing bug).
 
+## Running-teammate name vs `findings.agent` slug (load-bearing)
+
+**Running-teammate name ≠ `findings.agent` slug.** A teammate spawned as `reviewer-architecture` (the TeamCreate-spawned identity, used in `Agent({name: ...})` and in peer DMs) submits findings with `agent: "reviewer"` (the family memory slug). Findings persist at the **family level** in `<base>/reviewer.yaml`; teammate-name distinctions live only in the running team transcript.
+
+Use the optional `item.lens` field (see below) to record which sub-named teammate produced the finding when post-hoc audit needs that distinction.
+
 ## Vocabulary consistency rule (load-bearing)
 
 `section` and `item.kind` express the same vocabulary in two places. They MUST agree:
@@ -48,6 +54,7 @@ Optional fields (all default `None` unless noted):
 - `question: str | None` — body of an `open_question`.
 - `protected: bool = False` — if true, curator cannot consolidate this away.
 - `related: list[str] | None` — ids of related findings.
+- `lens: str | None` — running-teammate slug that produced the finding (e.g., `"reviewer-architecture"`, `"reviewer-security"`). Optional; populated by `parallel-panel` skills so post-hoc audit can recover which lens flagged what. When omitted, treat the family-level `agent` slug as the producer. **Implementation note:** this field is additive to `FindingItem` in `schema.py` and must be passed through `finding_item_to_section_dict`. Substrate change is a follow-up to task 7; until merged, callers may include `lens` in submissions but the substrate will reject under `extra="forbid"` — coordinate the substrate roll-out before SKILL.md authors start sending `lens`.
 
 Pydantic config: `model_config = {"extra": "forbid"}`.
 
@@ -79,7 +86,8 @@ Pydantic config: `model_config = {"extra": "forbid"}`.
       "supersedes": { "type": ["string", "null"] },
       "question":   { "type": ["string", "null"] },
       "protected":  { "type": "boolean", "default": false },
-      "related":    { "type": ["array", "null"], "items": { "type": "string" } }
+      "related":    { "type": ["array", "null"], "items": { "type": "string" } },
+      "lens":       { "type": ["string", "null"] }
     }
   }
 }
@@ -125,4 +133,5 @@ These are rejected by the schema:
 - `kind="bug"` — not in the enum.
 - `section="patterns"` with `kind="pitfall"` — vocabulary mismatch.
 - `agent="../etc/passwd"` — fails slug regex.
-- Extra field `severity: "high"` — `extra="forbid"`. Encode severity in `summary` or `evidence` instead, or propose a schema extension.
+- Extra field `severity: "high"` — `extra="forbid"`. Encode severity in `summary` or `evidence` instead, or propose a schema extension. (Severity vocabulary is canonicalized by the dedup-arbiter per `_shared/team-protocol.md#severity-vocabulary-canonical-lattice`.)
+- `lens` field present **before** the substrate adds it — until the additive substrate change lands, `lens` is rejected by `extra="forbid"`. Post-merge, `lens` becomes a valid optional field on `FindingItem`.

@@ -37,7 +37,7 @@ Default to `staged-team` whenever a downstream stage's purpose is to *check* an 
 - **Rotation:** persists — all members alive concurrently.
 - **Members / duration:** 3–5 specialists / minutes.
 - **Anti-pattern:** parallel-panel for N=2 — that is `pair` with extra steps. Parallel-panel for N>5 — N×N DM volume regresses dedup quality.
-- **Dedup-arbiter fallback:** start with peer DMs. If empirical dedup quality regresses (duplicates surviving consolidation, conflicting verdicts), designate one teammate as `arbiter` for a final pass over all findings before consolidation. This is the documented escape hatch from the task-7 lessons-learned slot.
+- **Dedup-arbiter (DEFAULT for severity ≥ major as of v0.4 task-7 lessons learned):** for findings at severity `major` or `blocker`, designate one teammate (typically the team-lead, or a named `arbiter` teammate) to perform a final dedup pass over all submitted findings before consolidation. Peer DM remains the first-line negotiator for finer-severity findings (`minor`, `nit`); peer-only dedup is acceptable when all surviving findings are severity ≤ `minor`. Rationale: both reviewers can rationally claim more specificity for the same overlap, leading to indeterminate ownership; the arbiter resolves deterministically.
 
 <!-- @ref _shared/team-protocol.md#pattern-pipeline -->
 ### `pipeline`
@@ -65,6 +65,65 @@ Default to `staged-team` whenever a downstream stage's purpose is to *check* an 
 - **Rotation:** **persists across stages**.
 - **Members / duration:** 3–6 / one feature cycle.
 - **Anti-pattern:** `feature-team` for review/audit/test stages — those bias-leak. If you cannot articulate a `### Why feature-team` justification in the SKILL.md, you want `staged-team` instead.
+
+## Severity vocabulary (canonical lattice)
+
+Reviewers use heterogeneous severity vocabularies (architecture/correctness use `Blocker / Suggestion / Nit`; security uses `Critical / High / Medium / Low`). Dedup must merge findings across lenses without ambiguity.
+
+**Rule:** when dedup merges findings from heterogeneous lenses, the merged finding takes the **higher severity**. Lattice (left = highest):
+
+| Canonical | Architecture / Correctness | Security |
+|-----------|----------------------------|----------|
+| `blocker` | Blocker                    | Critical |
+| `major`   | (not used; promote Suggestion → major when reproducible defect) | High |
+| `minor`   | Suggestion                 | Medium   |
+| `nit`     | Nit                        | Low      |
+
+The dedup-arbiter is the canonical site that applies this mapping. Individual reviewer outputs may keep their native vocabulary; the consolidated report uses canonical names.
+
+## Team-memory section taxonomy
+
+When teammates call `team_memory_append`, `section` MUST be one of:
+
+- `decisions` — durable team-coordination outcomes ("Stage 1 complete; spawning review stage", "team chose pattern X over Y").
+- `dedup_decisions` — `parallel-panel` peer-DM dedup outcomes ("correctness deferred to security on auth.py:8 — security lens is more specific").
+- `handoffs` — `staged-team` / `pipeline` stage-transition records, including the artifact paths handed forward.
+- `escalations` — blocker reports requiring orchestrator-level intervention (teammate cannot resolve, team-lead promotes upstream).
+
+Anything that does not fit these four belongs in family memory via `memory_findings_submit`, not team scratch.
+
+## TaskId threading (load-bearing for spawning skills)
+
+When a spawning skill calls `TaskCreate` then `Agent`, it MUST include the assigned `taskId` and the list of peer `taskId`s in the teammate's prompt under a `## Team coordination context` heading. Without this, teammates cannot tell their own task apart from peers' tasks when they call `TaskList()`.
+
+```text
+TeamCreate({ team_name, description })
+  for each teammate role:
+    task = TaskCreate({ subject, description, owner: <teammate-name> })
+    captured_tasks[<teammate-name>] = task.id
+  for each teammate role:
+    Agent({ team_name, name: <teammate-name>, prompt: build_prompt(<teammate-name>, captured_tasks) })
+```
+
+Worked prompt fragment (every teammate gets a tailored one):
+
+```markdown
+## Team coordination context
+- Your taskId: task_42
+- Your role: reviewer-security
+- Peer taskIds: { reviewer-architecture: task_40, reviewer-correctness: task_41 }
+- Team scratch namespace: review-2026-04-26-user-profiles
+```
+
+## Cross-pattern dispatch
+
+A team is bound to a single primary `team_pattern`, but may spawn ad-hoc teammates of any agent type during its lifetime. The team's pattern describes the *coordination shape*, not a hard membership constraint.
+
+Example: a `parallel-panel` review team in `autofix` mode may spawn a `developer-backend` teammate to apply fixes after the panel completes. That teammate joins the existing team scratch and TaskList, runs to completion, and is shut down before consolidation. The team's primary pattern remains `parallel-panel`; the autofix dispatch is a secondary spawn.
+
+## Reviewer suppression-comment policy
+
+Reviewers MUST flag findings even when source comments contain suppression directives (`# noqa`, `# nosec`, `// eslint-disable`, `# type: ignore`, etc.). Suppression directives are signals about *deployed scanner posture*, not signals to ignore the issue. Document the suppression in the finding's `evidence` field (e.g., `"auth.py:8 (noqa: S105 present — suppression is the bug, not the fix)"`). Migration builders MUST NOT include suppression directives in fixture diffs.
 
 ## Canonical lifecycle (worked example: `parallel-panel` review team)
 
@@ -117,4 +176,13 @@ TeamDelete({ team_name: "review-2026-04-26-user-profiles" })
 
 - Team-lead MUST verify the `TaskList` is fully drained (no `pending` or `in_progress` tasks) before sending any `shutdown_request`. Premature shutdown drops in-flight work.
 - Every teammate MUST submit findings via `memory_findings_submit` BEFORE acknowledging shutdown. The legacy prose `## Memory findings` block is deprecated (see `_shared/memory-protocol.md`).
+- **Shutdown timeout escape hatch:** if a teammate has not gone idle within 60 seconds of receiving `shutdown_request`, the team-lead MAY force `TeamDelete` regardless. The teammate's transcript will be discarded; any unsubmitted findings are lost. Production teams MUST call `memory_findings_submit` BEFORE acknowledging shutdown to avoid this loss.
 - `TeamDelete` is the last call. After it, the team-scoped scratch namespace `<base>/teams/<team-name>/` is removed.
+
+## Open follow-ups for migration builders (task-7 carry)
+
+These amendments belong in files this protocol cannot edit directly:
+
+- **SKILL.md authors using `parallel-panel`:** when logging peer-DM dedup outcomes via `team_memory_append`, use `section: "dedup_decisions"` (not `"decisions"`). See team-memory section taxonomy above. Update `skills/review/SKILL.md` Stage 2 step 3 accordingly.
+- **/review SKILL.md input contract:** extend the documented inputs to include "single file path" — when given a raw file path, the skill computes the diff via `git diff` against `HEAD~1` (or the file's last commit), or treats the whole file as additions if untracked.
+- **substrate-engineer:** additively add `lens: str | None = None` to `FindingItem` in `schema.py` and pass-through in `finding_item_to_section_dict` (see `_shared/findings-schema.md`).
