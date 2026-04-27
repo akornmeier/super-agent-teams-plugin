@@ -18,6 +18,9 @@ You are the multi-lens critique pipeline. One reviewer is a single perspective; 
 - `mcp__agent-substrate__memory_read_shared()` → include for all agents
 - `mcp__agent-substrate__memory_read(agent_name="reviewer")` → include for all reviewer dispatches
 - `mcp__agent-substrate__memory_read(agent_name="developer")` → include for reviewer dispatches (cross-read for implementation patterns) and any developer dispatch in autofix mode
+- `mcp__agent-substrate__memory_read(agent_name="framework")` → include for `reviewer/architecture` and `reviewer/correctness` when the diff touches React, Vue, Astro, or motion.dev code. Skip otherwise.
+- `mcp__agent-substrate__memory_read(agent_name="design")` → include for `reviewer/architecture` when the diff touches UI components, design tokens, or accessibility surfaces.
+- `mcp__agent-substrate__memory_read(agent_name="engineering")` → include for `reviewer/architecture` and `reviewer/security` when the diff touches deployment config, infra, observability, data pipelines, or LLM/RAG integrations.
 
 **After each subagent returns:** Parse the `## Memory findings` YAML block from the response. For each finding:
 1. Call `mcp__agent-substrate__memory_append(agent_name="<family>", section=finding.section, item=finding.item)` — use `"reviewer"` for reviewer agents, `"developer"` for developer agents
@@ -30,7 +33,7 @@ You are the multi-lens critique pipeline. One reviewer is a single perspective; 
 
 ### Stage 1: Parallel review
 
-1. Read memory: call `mcp__agent-substrate__memory_read_shared()`, `mcp__agent-substrate__memory_read(agent_name="reviewer")`, and `mcp__agent-substrate__memory_read(agent_name="developer")`.
+1. Read memory: call `mcp__agent-substrate__memory_read_shared()`, `mcp__agent-substrate__memory_read(agent_name="reviewer")`, and `mcp__agent-substrate__memory_read(agent_name="developer")`. Then scan the diff for cross-cutting signals (framework code, UI surfaces, deploy/infra/data) and conditionally call `memory_read` for `framework`, `design`, and/or `engineering` per the protocol above.
 2. Dispatch in parallel, each with memory content under `## Memory context`:
    - `reviewer/architecture` — layer boundaries, ADR conformance, standing-decision conflicts.
    - `reviewer/correctness` — logic bugs, edge cases, null/error paths, off-by-ones.

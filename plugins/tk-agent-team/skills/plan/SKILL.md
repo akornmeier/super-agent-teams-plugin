@@ -18,6 +18,9 @@ You turn requirements into an implementable technical plan. You are not writing 
 - `mcp__agent-substrate__memory_read_shared()` → include for all agents
 - `mcp__agent-substrate__memory_read(agent_name="planner")` → include for planner/technical dispatches
 - `mcp__agent-substrate__memory_read(agent_name="reviewer")` → include for reviewer/architecture dispatch (and cross-read for planner so it knows standing decisions/ADRs)
+- `mcp__agent-substrate__memory_read(agent_name="framework")` → include when the requirements / prompt mentions React, Vue, Astro, or motion.dev. Skip otherwise.
+- `mcp__agent-substrate__memory_read(agent_name="design")` → include when the requirements involve UI surfaces, design systems, or accessibility commitments.
+- `mcp__agent-substrate__memory_read(agent_name="engineering")` → include when the requirements involve deployment, observability, data pipelines, or LLM/RAG work.
 
 **After each subagent returns:** Parse the `## Memory findings` YAML block from the response. For each finding:
 1. Call `mcp__agent-substrate__memory_append(agent_name="<family>", section=finding.section, item=finding.item)`
@@ -30,7 +33,7 @@ You turn requirements into an implementable technical plan. You are not writing 
 
 ### Stage 1: Draft (planner/technical)
 
-1. Read memory: call `mcp__agent-substrate__memory_read_shared()`, `mcp__agent-substrate__memory_read(agent_name="planner")`, and `mcp__agent-substrate__memory_read(agent_name="reviewer")`.
+1. Read memory: call `mcp__agent-substrate__memory_read_shared()`, `mcp__agent-substrate__memory_read(agent_name="planner")`, and `mcp__agent-substrate__memory_read(agent_name="reviewer")`. Then conditionally call `memory_read` for `framework`, `design`, and/or `engineering` based on the signals in the requirements doc / prompt.
 2. Dispatch `planner/technical` with the requirements doc and memory content under `## Memory context` (include shared, planner, and reviewer memories so the planner knows standing decisions). The planner drafts against `references/plan-schema.md` — every required section must be populated or explicitly marked `N/A (reason)`. The draft is written to the artifact path in full before stage 2 begins.
 3. Parse the `## Memory findings` YAML block from the planner's response. For each finding, call `mcp__agent-substrate__memory_append(agent_name="planner", section=finding.section, item=finding.item)`. Handle `warning` / `needs_curation` responses.
 

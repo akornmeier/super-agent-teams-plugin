@@ -17,7 +17,7 @@ You are the durability pipeline. You take the transient outputs of a cycle (code
 **Before dispatching docs-writer:** Call these MCP tools and include the results in the subagent's prompt under `## Memory context`:
 - `mcp__agent-substrate__memory_read_shared()` → include for all agents
 - `mcp__agent-substrate__memory_read(agent_name="docs-writer")` → include for docs-writer dispatch
-- Read all family memories touched during the cycle (typically `planner`, `developer`, `reviewer`, `tester`, `debugger`, `researcher`) via `mcp__agent-substrate__memory_read(agent_name="<family>")` for each — include all as cross-read context for docs-writer
+- Read all family memories touched during the cycle (typically `planner`, `developer`, `reviewer`, `tester`, `debugger`, `researcher`; also `design`, `framework`, `engineering`, `marketing` whenever those families were dispatched or cross-read during the cycle) via `mcp__agent-substrate__memory_read(agent_name="<family>")` for each — include all as cross-read context for docs-writer
 
 **After docs-writer returns:** Parse the `## Memory findings` YAML block from the response. For each finding:
 1. Call `mcp__agent-substrate__memory_append(agent_name="docs-writer", section=finding.section, item=finding.item)`
@@ -38,7 +38,7 @@ Determine the solution category from `references/categories.md` based on the dri
 - `/debug` cycles → `bug-fixes` (usually already written by `/debug`; docs-writer enriches)
 - Other triggers map via the descriptions in `references/categories.md`
 
-1. Read memory: call `mcp__agent-substrate__memory_read_shared()`, `mcp__agent-substrate__memory_read(agent_name="docs-writer")`, and read all family memories touched during the cycle via `mcp__agent-substrate__memory_read(agent_name="<family>")` for each.
+1. Read memory: call `mcp__agent-substrate__memory_read_shared()`, `mcp__agent-substrate__memory_read(agent_name="docs-writer")`, and read all family memories touched during the cycle via `mcp__agent-substrate__memory_read(agent_name="<family>")` for each — including any of `design`, `framework`, `engineering`, `marketing` that were dispatched.
 2. Dispatch `docs-writer` with the driving artifact, cycle sub-artifacts, `references/solution-schema.md`, and all memory content under `## Memory context`. Produces `docs/solutions/<category>/<YYYY-MM-DD>-<slug>.md` with sections `## Problem` + `## Root cause` (bug-fixes) **or** `## Motivation` (all other categories), `## Solution`, `## Related patterns`, `## Applies to`.
 3. Parse the `## Memory findings` YAML block from the docs-writer's response. For each finding, call `mcp__agent-substrate__memory_append(agent_name="docs-writer", section=finding.section, item=finding.item)`. Handle `warning` / `needs_curation` responses.
 
