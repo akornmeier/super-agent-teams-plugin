@@ -1,6 +1,7 @@
 ---
 name: work
-description: Use when an approved plan doc exists and the user wants code written ("implement the plan", "build phase 2", "code this up"). Parses the plan to classify frontend/backend/full-stack, dispatches the matching `developer/*` persona(s) in parallel where independent, and returns a summary of diffs. Reads/writes all agent memory at the skill layer via MCP tools before/after subagent dispatch.
+team_pattern: solo|pair
+description: Use when an approved plan doc exists and the user wants code written ("implement the plan", "build phase 2", "code this up"). Parses the plan to classify frontend/backend/full-stack. Frontend-only and backend-only paths run as a `solo` developer dispatch; full-stack paths upgrade to a `pair` team where `developer-frontend` + `developer-backend` DM each other on contract questions instead of round-tripping through this skill.
 ---
 
 # work
@@ -12,53 +13,72 @@ You are the implementation pipeline. The design work happened in `/plan`; you ex
 - **User prompt** (verbatim) under `## Original prompt` in the brief file.
 - **Input artifact path** — a `docs/plans/<YYYY-MM-DD>-<slug>-plan.md` file. Required. Absence = `status: blocked`.
 
-## Memory protocol (skill layer)
+## Mode routing
 
-**Before dispatching:** Call these MCP tools and include the results in each subagent's prompt under `## Memory context`:
-- `mcp__agent-substrate__memory_read_shared()` → include for all agents
-- `mcp__agent-substrate__memory_read(agent_name="developer")` → include for all developer dispatches
-- `mcp__agent-substrate__memory_read(agent_name="reviewer")` → include for developer dispatches (cross-read for ADR/pattern awareness)
-- `mcp__agent-substrate__memory_read(agent_name="framework")` → include when the plan's `## Tech stack` or `## Layers affected` mentions React, Vue, Astro, or motion.dev / Framer Motion. Skip otherwise.
-- `mcp__agent-substrate__memory_read(agent_name="design")` → include for `developer/frontend` dispatches when the plan touches UI components, design tokens, or accessibility-sensitive surfaces.
-- `mcp__agent-substrate__memory_read(agent_name="engineering")` → include for `developer/backend` dispatches when the plan touches deployment, observability, data pipelines, or LLM/RAG integrations.
+This skill has two coordination shapes selected by the input scope:
 
-**After each subagent returns:** Parse the `## Memory findings` YAML block from the response. For each finding:
-1. Call `mcp__agent-substrate__memory_append(agent_name="developer", section=finding.section, item=finding.item)`
-2. If the response includes `warning`, note the family for curation
-3. If the response includes `needs_curation: true`, dispatch `/memory-curate` for that family
+| Scope | Pattern | Why |
+|-------|---------|-----|
+| backend-only | `solo` | Single developer dispatch; no contract negotiation needed. |
+| frontend-only | `solo` | Same. |
+| full-stack | `pair` | Frontend + backend developers must align on API contract, error codes, and data shape. They DM each other directly instead of round-tripping through this skill. |
 
-**Important:** Subagents do NOT have MCP tool access. This skill (running in the parent session) is responsible for all memory reads before dispatch and all memory writes after each subagent returns. If a subagent returns no `## Memory findings` section, log a warning — the agent may need its prompt updated.
+The orchestrator routes via `agents/routing.yaml`'s `/work` rule (which currently declares `team_pattern: solo`); this skill upgrades to `pair` when the plan's `## Layers affected` selects full-stack. Augmentation rules (framework / design / engineering) apply on top of either mode.
 
-## Stages
+Classify by parsing the plan doc's `## Layers affected`:
 
-### Stage 1: Classify the plan
+- **frontend-only** — only frontend layers listed → solo, dispatch `developer-frontend`.
+- **backend-only** — only backend/data/infra layers listed → solo, dispatch `developer-backend`.
+- **full-stack** — both listed → pair team.
 
-Parse the plan doc's `## Layers affected` section. Classify:
-- **frontend-only** — only frontend layers listed. Dispatch `developer/frontend`.
-- **backend-only** — only backend/data/infra layers listed. Dispatch `developer/backend`.
-- **full-stack** — both listed. Fork both personas in parallel, each scoped to their respective layer items from the plan.
+Also parse `## Implementation phases` — default to executing phase 1 unless the user prompt names a specific phase (e.g. "implement phase 3").
 
-Also scan the plan for cross-cutting specialist signals to decide which augmentation memories to cross-read in stage 2:
-- Framework signals (React, Vue, Astro, motion.dev, Framer Motion, hooks, server components) → cross-read `framework`.
-- Design signals (component library, design tokens, ARIA, accessibility) → cross-read `design` for `developer/frontend`.
-- Engineering signals (deploy, container, SLO, observability, pipeline, embeddings, RAG) → cross-read `engineering` for `developer/backend`.
+## Memory protocol
 
-Also parse `## Implementation phases` — if the plan has phases, default to executing phase 1 unless the user prompt names a specific phase (e.g. "implement phase 3").
+<!-- @ref _shared/memory-protocol.md -->
+<!-- @ref _shared/team-protocol.md -->
 
-### Stage 2: Dispatch developer(s)
+### Memory deltas for this skill
 
-1. Read memory: call `mcp__agent-substrate__memory_read_shared()`, `mcp__agent-substrate__memory_read(agent_name="developer")`, and `mcp__agent-substrate__memory_read(agent_name="reviewer")`. Then conditionally call `memory_read` for `framework`, `design`, and/or `engineering` based on the signals detected in stage 1.
-2. Dispatch the chosen `developer/*` persona(s). Each receives:
-   - The full plan doc path.
-   - Its subset of `## Layers affected` items and the active phase's files/modules/tests.
-   - The memory content under `## Memory context` in the prompt.
-3. Developers produce real code diffs against the working tree. In full-stack mode, the two personas run in parallel but must not touch each other's layer files — cross-layer contracts live in the plan's `## Data-model changes` and are treated as read-only by both.
+- Both modes: each developer reads `_shared` + `developer` (their own family memory) directly via MCP at task start.
+- Cross-reads stay at the teammate layer per the canonical matrix: developers read `reviewer` for ADR/pattern awareness; `developer-frontend` reads `design` when the plan touches UI/a11y; `developer-backend` reads `engineering` when the plan touches deploy/infra/data/LLM; either reads `framework` when React/Vue/Astro/motion.dev signals appear.
+- Pair mode: a lightweight `team-lead` is also spawned to own the shared TaskList and serialize `_shared` writes; each developer DMs the other on contract questions but neither writes to `_shared`.
+- Findings submitted via `mcp__agent-substrate__memory_findings_submit({agent: "developer", ...})` per family. Use optional `item.lens` to record `developer-frontend` vs `developer-backend` once the substrate task-20 additive change lands; until then omit `lens` (would be rejected under `extra="forbid"`).
 
-### Stage 3: Collect diffs and persist memory
+## Workflow
 
-Collect the diffs from all dispatches. For each developer subagent response:
-1. Parse the `## Memory findings` YAML block. For each finding, call `mcp__agent-substrate__memory_append(agent_name="developer", section=finding.section, item=finding.item)`. Handle `warning` / `needs_curation` responses.
-2. Produce a summary artifact listing files changed, tests added, and any deviations from the plan (with justification). The artifact is a short status file — the *real* output is the working-tree diff.
+### Solo workflow (backend-only OR frontend-only)
+
+1. Read `_shared` + `developer` family memory at the skill layer only if the dispatched developer agent has not yet been migrated to direct MCP access; otherwise skip and let the developer self-load.
+2. Dispatch one developer subagent (Task tool, single-shot — same shape as v0.3) with the brief and the active phase's files/modules/tests scoped from `## Layers affected`.
+3. The subagent has direct MCP access if the renamed agent (per Task 5's reviewer-update pattern) has `mcp__agent-substrate__*` in its `tools` allowlist applied to developer agents the same way. If that update has been done, the subagent reads memory and submits findings directly via `memory_findings_submit`. If not, this skill calls `memory_findings_submit` from the parent on the subagent's behalf as a v0.4 transitional broker (legacy prose `## Memory findings` block parsing remains a grandfathered fallback per `_shared/memory-protocol.md#findings-deprecated`).
+4. Receive structured summary; persist findings if needed; return.
+
+This is the only place in v0.4 where the parent-broker pattern survives — for solo dispatches that don't need a team. Documented in `_shared/team-protocol.md#pattern-solo`.
+
+### Pair workflow (full-stack)
+
+1. Compute `team_slug` from the plan slug: lowercase-kebab, max 32 chars (e.g. `work-user-profiles`).
+2. `TeamCreate({team_name: "work-<slug>", description: "Full-stack work: <prompt-excerpt>"})`.
+3. Spawn the lightweight `team-lead` first. It owns the TaskList and serializes `_shared` writes.
+4. Spawn the pair concurrently (one message, parallel) and create one TaskList task per developer:
+   - `Agent({subagent_type: "Frontend Developer", name: "developer-frontend", team_name: "work-<slug>", prompt: "<see step 5>", run_in_background: true})` + `TaskCreate({subject: "Frontend implementation", description: "<frontend layer items>", owner: "developer-frontend"})`
+   - `Agent({subagent_type: "Backend Architect", name: "developer-backend", team_name: "work-<slug>", prompt: "<see step 5>", run_in_background: true})` + `TaskCreate({subject: "Backend implementation", description: "<backend layer items>", owner: "developer-backend"})`
+5. Each developer's prompt MUST include `## Team coordination context` with their own `taskId` AND the peer's `taskId`, per `_shared/team-protocol.md#taskid-threading`. The peer-DM pattern only works if each developer can address the other.
+6. Developers DM on contract questions:
+   - `SendMessage({team_name: "work-<slug>", to: "developer-backend", from: "developer-frontend", body: {type: "contract_question", topic: "API shape for /users", body: "<details>"}})`
+   - The other responds via `SendMessage` reply.
+   - Decisions are recorded in team scratch via `mcp__agent-substrate__team_memory_append({team_name: "work-<slug>", section: "decisions", item: {...}})` so the artifact captures what was agreed.
+7. Each developer submits findings to `mcp__agent-substrate__memory_findings_submit({agent: "developer", findings: [...]})` BEFORE acknowledging shutdown, per the schema in `_shared/findings-schema.md`.
+8. Team-lead sends `shutdown_request` to both developers, waits for idle (60s grace per `_shared/team-protocol.md#shutdown-invariants`), then `TeamDelete({team_name: "work-<slug>"})`.
+
+### Pair rules (load-bearing)
+
+- Both developers run concurrently. Neither blocks on the other except via DM.
+- The pair is symmetric — neither developer is the lead. Either may initiate a contract question.
+- Cross-layer contracts live in the plan's `## Data-model changes` and are treated as read-only by both — DMs negotiate ambiguity, not the contract itself.
+- If a contract question takes more than 3 DM round-trips to resolve, escalate to the parent skill (or to `team-lead`) — that's a sign the input scope wasn't sliced cleanly.
+- Pair team-lead is *lightweight*: it owns TaskList + `_shared` write serialization, but it does NOT do code review (that's `/review`'s job after `/work` returns).
 
 ## Write back
 
@@ -71,10 +91,14 @@ memory_findings: [developer]
 next_skill_hint: /review
 ```
 
+Pair mode adds `team_summary.contract_decisions` reading from the team scratch (`team_memory_read({team_name: "work-<slug>"})`, `decisions` section) so downstream skills see what was negotiated.
+
 ## Invariants (never violate)
 
-- This skill must persist every subagent's memory findings via `memory_append` before returning. If a subagent returns no `## Memory findings` section, log a warning — the agent may need its prompt updated.
 - Never proceed without a plan doc. Absence is an immediate blocker.
 - Never modify the plan doc mid-implementation — if the plan is wrong, return `status: needs_human` with the contradiction named.
-- Full-stack dispatches must run in parallel; serial execution is only acceptable when the plan explicitly calls out a frontend-blocks-on-backend dependency in `## Implementation phases`.
+- Solo dispatches MUST NOT call `TeamCreate`. Pair dispatches MUST.
+- Pair developers run concurrently. Serial execution is only acceptable when the plan explicitly calls out a frontend-blocks-on-backend dependency in `## Implementation phases`.
+- Every developer's findings persist via `memory_findings_submit` before shutdown is acknowledged (pair) or before this skill returns (solo). Silent loss contradicts the plugin's compound-knowledge thesis.
+- Pair mode always `TeamDelete`s at the end. Leaked team scratch is a liability.
 - Never commit — `/work` leaves changes staged-or-unstaged for the user to review.
