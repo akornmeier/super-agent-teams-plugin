@@ -96,7 +96,9 @@ check_agent() {
 
   # Skip any *.md in agents/ that lacks YAML frontmatter (non-agent docs).
   if ! has_frontmatter "$file"; then
-    echo "  DEBUG  skipping $file (no YAML frontmatter — not an agent file)" >&2
+    if [[ "${LINT_AGENTS_DEBUG:-}" == "1" ]]; then
+      echo "  DEBUG  skipping $file (no YAML frontmatter — not an agent file)" >&2
+    fi
     return
   fi
 

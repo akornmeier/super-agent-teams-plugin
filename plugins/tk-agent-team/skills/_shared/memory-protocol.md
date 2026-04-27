@@ -13,7 +13,7 @@ Three layers, three responsibilities. Never duplicate a read across layers.
 - Reads `_shared` ALWAYS.
 - Reads the **routed family only** (per `routing.yaml` lookup) — not all 12 families.
 - Reads augmentation families if the prompt matched augmentation triggers (`framework`, `design`, `engineering`, `marketing`).
-- Owns serialized writes to `_shared.yaml`. No teammate writes `_shared` directly — propose via `memory_findings_submit(agent="_shared", ...)` and the orchestrator (or team-lead, see below) commits.
+- Owns serialized writes to `_shared.yaml` via `memory_append_shared(section, item)`. No teammate writes `_shared` directly — teammates DM the team-lead (or surface the proposal back to the orchestrator for solo skills) with the proposed item; the team-lead/orchestrator validates and commits via `memory_append_shared`. (`memory_findings_submit` cannot target `_shared` because the `agent` slug must match `^[a-z][a-z0-9-]{0,63}$`.)
 - Does NOT pre-load specialist cross-family memory — that lives at the teammate layer.
 
 <!-- @ref _shared/memory-protocol.md#layer-skill -->
@@ -31,7 +31,7 @@ Three layers, three responsibilities. Never duplicate a read across layers.
 
 ## `_shared` write serialization
 
-Only the team-lead (or the orchestrator, for solo skills) writes to `_shared`. This prevents two teammates appending the same standing decision concurrently and racing the lock file. Teammates that want to propose a `_shared` update do so by submitting a finding with `agent="_shared"`; the team-lead reviews and commits.
+Only the team-lead (or the orchestrator, for solo skills) writes to `_shared` — and they do it via `memory_append_shared(section, item)`, which is the only tool that writes the shared namespace. This prevents two teammates appending the same standing decision concurrently and racing the lock file. Teammates that want to propose a `_shared` update DM the team-lead with the proposed `{section, item}`; the team-lead reviews and commits via `memory_append_shared`. (`memory_findings_submit` rejects `agent="_shared"` because the agent slug must match `^[a-z][a-z0-9-]{0,63}$`.)
 
 ## Findings submission (load-bearing)
 
@@ -45,6 +45,7 @@ mcp__agent-substrate__memory_findings_submit(
     agent="reviewer-security",
     findings=[
         {
+            "agent": "reviewer",
             "section": "pitfalls",
             "item": {
                 "kind": "pitfall",
@@ -95,6 +96,7 @@ mcp__agent-substrate__memory_findings_submit(
     agent="tester-unit",
     findings=[
         {
+            "agent": "tester",
             "section": "patterns",
             "item": {
                 "kind": "pattern",

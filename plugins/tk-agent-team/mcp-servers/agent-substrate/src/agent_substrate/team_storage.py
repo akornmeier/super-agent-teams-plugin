@@ -12,7 +12,6 @@ to live except the parent's transient context.
 
 from __future__ import annotations
 
-import re
 import shutil
 from pathlib import Path
 from typing import Any
@@ -21,11 +20,11 @@ import yaml
 
 from .schema import (
     AGENT_NAME_PATTERN,
-    SECTION_MODELS,
-    MemoryFile,
-    empty_memory,
+    TEAM_SECTION_MODELS,
+    TeamScratchFile,
+    empty_team_scratch,
     now_iso,
-    validate_section,
+    validate_team_section,
 )
 from .storage import (
     HARD_LIMIT,
@@ -104,8 +103,122 @@ class TeamMemoryStorage(MemoryStorage):
         section: str,
         item: dict[str, Any],
     ) -> WriteResult:
-        """Append a single item to a section of a team's scratch memory."""
-        return self._append_to_path(self._scratch_path(team_name), section, item)
+        """Append a single item to a section of a team's scratch memory.
+
+        Validates `section` against the team-scratch taxonomy (decisions,
+        dedup_decisions, handoffs, escalations) and `item` against
+        `TeamScratchItem`. This is intentionally NOT routed through
+        `MemoryStorage._append_to_path` — that path uses the agent-memory
+        section vocabulary, which would reject the team-scratch sections.
+        """
+        return self._append_team_scratch(
+            self._scratch_path(team_name), section, item
+        )
+
+    def _append_team_scratch(
+        self,
+        path: Path,
+        section: str,
+        item: dict[str, Any],
+    ) -> WriteResult:
+        validate_team_section(section)
+        if not isinstance(item, dict):
+            return WriteResult(
+                ok=False,
+                char_count=0,
+                error=f"item must be a dict, got {type(item).__name__}",
+            )
+
+        with self._locked(path):
+            # Load existing or start fresh
+            if path.exists():
+                try:
+                    existing_content = path.read_text(encoding="utf-8")
+                    existing_parsed = yaml.safe_load(existing_content) or {}
+                except yaml.YAMLError as e:
+                    return WriteResult(
+                        ok=False,
+                        char_count=0,
+                        error=f"Existing scratch file has invalid YAML: {e}",
+                    )
+                if not isinstance(existing_parsed, dict):
+                    return WriteResult(
+                        ok=False,
+                        char_count=0,
+                        error="Existing scratch file is not a YAML mapping.",
+                    )
+                try:
+                    scratch = TeamScratchFile.model_validate(existing_parsed)
+                except Exception as e:
+                    return WriteResult(
+                        ok=False,
+                        char_count=0,
+                        error=(
+                            f"Existing scratch file fails schema validation: {e}."
+                        ),
+                    )
+            else:
+                scratch = empty_team_scratch()
+
+            # Validate the new item against the team-scratch item model
+            ItemModel = TEAM_SECTION_MODELS[section]
+            try:
+                new_item = ItemModel.model_validate(item)
+            except Exception as e:
+                return WriteResult(
+                    ok=False,
+                    char_count=0,
+                    error=f"Item failed schema validation for {section}: {e}",
+                )
+
+            # Append and update timestamp
+            getattr(scratch, section).append(new_item)
+            scratch.updated = now_iso()
+
+            # Serialize, check size, write atomically
+            canonical = self._serialize_scratch(scratch)
+            char_count = len(canonical)
+
+            if char_count > HARD_LIMIT:
+                return WriteResult(
+                    ok=False,
+                    char_count=char_count,
+                    needs_curation=True,
+                    error=(
+                        f"Append would exceed hard limit "
+                        f"({char_count} > {HARD_LIMIT} chars). Request curation."
+                    ),
+                )
+
+            self._atomic_write(path, canonical)
+
+            if char_count > SOFT_LIMIT:
+                return WriteResult(
+                    ok=True,
+                    char_count=char_count,
+                    warning=(
+                        f"Team scratch is approaching the hard limit "
+                        f"({char_count}/{HARD_LIMIT} chars). "
+                        "Consider requesting curation from the orchestrator."
+                    ),
+                )
+            return WriteResult(ok=True, char_count=char_count)
+
+    @staticmethod
+    def _serialize_scratch(scratch: TeamScratchFile) -> str:
+        """Serialize a TeamScratchFile to canonical YAML.
+
+        Same conventions as `MemoryStorage._serialize`: preserves field
+        order, block style, wide line width.
+        """
+        data = scratch.model_dump(exclude_none=False)
+        return yaml.safe_dump(
+            data,
+            sort_keys=False,
+            allow_unicode=True,
+            default_flow_style=False,
+            width=1000,
+        )
 
     # --- Summary ----------------------------------------------------------
 
@@ -123,7 +236,7 @@ class TeamMemoryStorage(MemoryStorage):
                 "char_count": 0,
                 "soft_limit": SOFT_LIMIT,
                 "hard_limit": HARD_LIMIT,
-                "counts": {section: 0 for section in SECTION_MODELS},
+                "counts": {section: 0 for section in TEAM_SECTION_MODELS},
             }
         with self._locked(path):
             content = path.read_text(encoding="utf-8")
@@ -131,9 +244,9 @@ class TeamMemoryStorage(MemoryStorage):
             parsed = yaml.safe_load(content)
         except yaml.YAMLError:
             parsed = None
-        counts = {section: 0 for section in SECTION_MODELS}
+        counts = {section: 0 for section in TEAM_SECTION_MODELS}
         if isinstance(parsed, dict):
-            for section in SECTION_MODELS:
+            for section in TEAM_SECTION_MODELS:
                 value = parsed.get(section)
                 if isinstance(value, list):
                     counts[section] = len(value)

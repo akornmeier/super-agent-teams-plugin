@@ -1,6 +1,6 @@
 [project]
 name = "tk-agent-team"
-version = "0.3.0"
+version = "0.4.0"
 description = "Test harness for the tk-agent-team Claude Code plugin (routing fixtures, etc.)."
 requires-python = ">=3.10"
 dependencies = [

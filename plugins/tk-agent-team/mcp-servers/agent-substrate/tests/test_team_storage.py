@@ -87,8 +87,8 @@ class TestAppendReadRoundTrip:
     def test_append_creates_team_dir_and_file(self, team_storage, tmp_path):
         result = team_storage.append(
             "review-auth",
-            "patterns",
-            {"id": "first-pat", "summary": "first"},
+            "handoffs",
+            {"id": "first-handoff", "summary": "stage 1 → stage 2"},
         )
         assert result.ok, result.error
 
@@ -100,55 +100,85 @@ class TestAppendReadRoundTrip:
     def test_append_then_read(self, team_storage):
         assert team_storage.append(
             "review-auth",
-            "patterns",
-            {"id": "p1", "summary": "use linter X"},
+            "handoffs",
+            {"id": "h1", "summary": "stage 1 complete"},
         ).ok
         result = team_storage.read("review-auth")
         assert result.exists
-        assert result.parsed["patterns"][0]["id"] == "p1"
-        assert result.parsed["patterns"][0]["summary"] == "use linter X"
+        assert result.parsed["handoffs"][0]["id"] == "h1"
+        assert result.parsed["handoffs"][0]["summary"] == "stage 1 complete"
 
     def test_append_to_each_section(self, team_storage):
         assert team_storage.append(
-            "team-a", "patterns", {"id": "p1", "summary": "p"}
+            "team-a", "decisions", {"id": "d1", "summary": "team chose X"}
         ).ok
         assert team_storage.append(
-            "team-a", "pitfalls", {"id": "pf1", "summary": "pf"}
+            "team-a",
+            "dedup_decisions",
+            {
+                "id": "dd1",
+                "summary": "correctness deferred to security",
+                "peers": ["reviewer-correctness", "reviewer-security"],
+            },
         ).ok
         assert team_storage.append(
-            "team-a", "decisions", {"id": "d1", "choice": "do x"}
+            "team-a",
+            "handoffs",
+            {
+                "id": "h1",
+                "summary": "stage 1 → stage 2",
+                "from_stage": "work",
+                "to_stage": "review",
+                "artifact_path": "docs/work/foo.md",
+            },
         ).ok
         assert team_storage.append(
-            "team-a", "open_questions", {"id": "q1", "question": "why?"}
+            "team-a",
+            "escalations",
+            {"id": "e1", "summary": "blocker", "severity": "blocker"},
         ).ok
 
         result = team_storage.read("team-a")
-        assert len(result.parsed["patterns"]) == 1
-        assert len(result.parsed["pitfalls"]) == 1
         assert len(result.parsed["decisions"]) == 1
-        assert len(result.parsed["open_questions"]) == 1
+        assert len(result.parsed["dedup_decisions"]) == 1
+        assert len(result.parsed["handoffs"]) == 1
+        assert len(result.parsed["escalations"]) == 1
+
+    def test_append_rejects_agent_memory_sections(self, team_storage):
+        # Agent-memory sections (patterns, pitfalls, open_questions) are NOT
+        # valid for team scratch. The dedicated team-scratch validator must
+        # reject them so callers don't accidentally use the wrong vocabulary.
+        # Mirrors the per-agent storage behavior where `validate_section`
+        # raises rather than returning a WriteResult.
+        for bad_section in ("patterns", "pitfalls", "open_questions"):
+            with pytest.raises(ValueError, match="Invalid team-scratch section"):
+                team_storage.append(
+                    "team-x",
+                    bad_section,
+                    {"id": "x", "summary": "y"},
+                )
 
     def test_append_invalid_team_name(self, team_storage):
         with pytest.raises(ValueError):
             team_storage.append(
                 "../etc/passwd",
-                "patterns",
+                "handoffs",
                 {"id": "x", "summary": "y"},
             )
 
     def test_append_isolates_teams(self, team_storage):
         team_storage.append(
-            "team-a", "patterns", {"id": "a-pat", "summary": "team-a fact"}
+            "team-a", "handoffs", {"id": "a-h", "summary": "team-a handoff"}
         )
         team_storage.append(
-            "team-b", "patterns", {"id": "b-pat", "summary": "team-b fact"}
+            "team-b", "handoffs", {"id": "b-h", "summary": "team-b handoff"}
         )
         a = team_storage.read("team-a")
         b = team_storage.read("team-b")
-        assert a.parsed["patterns"][0]["id"] == "a-pat"
-        assert b.parsed["patterns"][0]["id"] == "b-pat"
-        assert len(a.parsed["patterns"]) == 1
-        assert len(b.parsed["patterns"]) == 1
+        assert a.parsed["handoffs"][0]["id"] == "a-h"
+        assert b.parsed["handoffs"][0]["id"] == "b-h"
+        assert len(a.parsed["handoffs"]) == 1
+        assert len(b.parsed["handoffs"]) == 1
 
 
 # ============================================================================
@@ -164,10 +194,10 @@ class TestLimits:
         for i in range(80):
             r = team_storage.append(
                 "team-soft",
-                "patterns",
+                "handoffs",
                 {
-                    "id": f"pat-{i:04d}",
-                    "summary": "A reasonable-length summary describing a pattern",
+                    "id": f"hand-{i:04d}",
+                    "summary": "A reasonable-length summary describing a handoff",
                 },
             )
             if r.warning is not None and SOFT_LIMIT < r.char_count <= HARD_LIMIT:
@@ -184,8 +214,8 @@ class TestLimits:
         for i in range(200):
             r = team_storage.append(
                 "team-hard",
-                "patterns",
-                {"id": f"pat-{i:04d}", "summary": "X" * 200},
+                "handoffs",
+                {"id": f"hand-{i:04d}", "summary": "X" * 200},
             )
             if not r.ok:
                 assert r.needs_curation
@@ -210,7 +240,7 @@ class TestConcurrency:
         def append(item_id: str):
             try:
                 r = team_storage.append(
-                    team, "patterns", {"id": item_id, "summary": item_id}
+                    team, "handoffs", {"id": item_id, "summary": item_id}
                 )
                 assert r.ok, r.error
             except Exception as e:  # noqa: BLE001
@@ -225,7 +255,7 @@ class TestConcurrency:
 
         assert errors == [], f"Threaded appends raised: {errors}"
         result = team_storage.read(team)
-        ids = sorted(p["id"] for p in result.parsed["patterns"])
+        ids = sorted(p["id"] for p in result.parsed["handoffs"])
         assert ids == ["thread-one", "thread-two"]
 
 
@@ -240,22 +270,22 @@ class TestSummary:
         assert s["exists"] is False
         assert s["char_count"] == 0
         assert s["counts"] == {
-            "patterns": 0,
-            "pitfalls": 0,
             "decisions": 0,
-            "open_questions": 0,
+            "dedup_decisions": 0,
+            "handoffs": 0,
+            "escalations": 0,
         }
 
     def test_summary_after_appends(self, team_storage):
-        team_storage.append("t", "patterns", {"id": "p1", "summary": "x"})
-        team_storage.append("t", "patterns", {"id": "p2", "summary": "y"})
-        team_storage.append("t", "decisions", {"id": "d1", "choice": "z"})
+        team_storage.append("t", "handoffs", {"id": "h1", "summary": "x"})
+        team_storage.append("t", "handoffs", {"id": "h2", "summary": "y"})
+        team_storage.append("t", "decisions", {"id": "d1", "summary": "z"})
         s = team_storage.summary("t")
         assert s["exists"] is True
-        assert s["counts"]["patterns"] == 2
-        assert s["counts"]["pitfalls"] == 0
+        assert s["counts"]["handoffs"] == 2
+        assert s["counts"]["dedup_decisions"] == 0
         assert s["counts"]["decisions"] == 1
-        assert s["counts"]["open_questions"] == 0
+        assert s["counts"]["escalations"] == 0
         assert s["char_count"] > 0
 
     def test_summary_invalid_team_name(self, team_storage):
@@ -271,7 +301,7 @@ class TestSummary:
 class TestDelete:
     def test_delete_existing_team(self, team_storage, tmp_path):
         team_storage.append(
-            "team-del", "patterns", {"id": "p1", "summary": "x"}
+            "team-del", "handoffs", {"id": "h1", "summary": "x"}
         )
         team_dir = tmp_path / "memory" / TEAMS_DIRNAME / "team-del"
         assert team_dir.is_dir()

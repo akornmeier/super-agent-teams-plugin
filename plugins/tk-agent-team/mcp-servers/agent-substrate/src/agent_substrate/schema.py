@@ -26,6 +26,20 @@ ITEM_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]{0,127}$")
 VALID_SECTIONS = ("patterns", "pitfalls", "decisions", "open_questions")
 SectionName = Literal["patterns", "pitfalls", "decisions", "open_questions"]
 
+# Team-scratch sections — distinct taxonomy from agent-memory. Used by
+# `team_memory_append` to record team-level coordination events (handoffs,
+# peer-DM dedup outcomes, blocker escalations, durable team decisions). See
+# `skills/_shared/team-protocol.md#team-memory-section-taxonomy`.
+VALID_TEAM_SECTIONS = (
+    "decisions",
+    "dedup_decisions",
+    "handoffs",
+    "escalations",
+)
+TeamSectionName = Literal[
+    "decisions", "dedup_decisions", "handoffs", "escalations"
+]
+
 
 def validate_agent_name(name: object) -> None:
     """Raise ValueError if agent_name is not a valid slug.
@@ -50,6 +64,15 @@ def validate_section(section: object) -> None:
     if section not in VALID_SECTIONS:
         raise ValueError(
             f"Invalid section: {section!r}. Must be one of {VALID_SECTIONS}."
+        )
+
+
+def validate_team_section(section: object) -> None:
+    """Raise ValueError if section is not a valid team-scratch section."""
+    if section not in VALID_TEAM_SECTIONS:
+        raise ValueError(
+            f"Invalid team-scratch section: {section!r}. "
+            f"Must be one of {VALID_TEAM_SECTIONS}."
         )
 
 
@@ -127,6 +150,60 @@ SECTION_MODELS: dict[str, type[_ItemBase]] = {
 }
 
 
+# --- Team-scratch item models ----------------------------------------------
+#
+# Team scratch is a SEPARATE namespace from per-agent memory. Its sections
+# record team-level coordination events, not the agent's expertise items.
+# Each section accepts a flexible item shape with a small required core
+# (`id`, `summary`) plus optional fields for the common coordination shapes
+# (`kind`, `from_stage`, `to_stage`, `artifact_path`, `peers`, `severity`,
+# `details`). All four sections share one item model since the differences
+# between handoff/dedup/escalation are mostly about which optional fields
+# get populated, not about disjoint required fields.
+
+
+class TeamScratchItem(_ItemBase):
+    """A single team-scratch coordination record.
+
+    Required: `id`, `summary`. All other fields are optional and capture
+    common shapes documented in `skills/_shared/team-protocol.md`:
+
+    - `handoffs`: stage transitions — populate `from_stage`, `to_stage`,
+      `artifact_path`.
+    - `dedup_decisions`: parallel-panel peer-DM dedup outcomes — populate
+      `peers` with the deferring/keeping teammates and `details` with the
+      rationale.
+    - `escalations`: blocker reports — populate `severity` and `details`.
+    - `decisions`: durable team-coordination outcomes — `summary` plus
+      optional `details`.
+
+    `kind` is a free-form tag (e.g., `"stage_transition"`,
+    `"peer_dedup"`, `"blocker"`) for downstream filtering. `protected`
+    follows the same curation-respect convention as agent-memory items.
+    """
+
+    summary: str
+    kind: str | None = None
+    from_stage: str | None = None
+    to_stage: str | None = None
+    artifact_path: str | None = None
+    peers: list[str] | None = None
+    severity: str | None = None
+    details: str | None = None
+    protected: bool = False
+
+
+# Map team-scratch section name -> Pydantic model. All four sections share
+# one model — the schema is intentionally flexible because team-scratch
+# records ephemeral coordination events, not curated knowledge.
+TEAM_SECTION_MODELS: dict[str, type[_ItemBase]] = {
+    "decisions": TeamScratchItem,
+    "dedup_decisions": TeamScratchItem,
+    "handoffs": TeamScratchItem,
+    "escalations": TeamScratchItem,
+}
+
+
 # --- Top-level memory file model -------------------------------------------
 
 
@@ -164,6 +241,47 @@ class MemoryFile(BaseModel):
 def empty_memory() -> MemoryFile:
     """Construct a fresh, empty MemoryFile with the current timestamp."""
     return MemoryFile(version=1, updated=now_iso())
+
+
+class TeamScratchFile(BaseModel):
+    """Top-level schema for a team's scratch.yaml file.
+
+    Distinct from `MemoryFile`: the four sections are the team-scratch
+    taxonomy (decisions, dedup_decisions, handoffs, escalations) and each
+    list holds `TeamScratchItem`s.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    version: int = 1
+    updated: str  # ISO 8601 timestamp; set automatically on every write
+    decisions: list[TeamScratchItem] = Field(default_factory=list)
+    dedup_decisions: list[TeamScratchItem] = Field(default_factory=list)
+    handoffs: list[TeamScratchItem] = Field(default_factory=list)
+    escalations: list[TeamScratchItem] = Field(default_factory=list)
+
+    @field_validator("version")
+    @classmethod
+    def _validate_version(cls, v: int) -> int:
+        if v != 1:
+            raise ValueError(
+                f"Unsupported team scratch file version: {v}. Expected 1."
+            )
+        return v
+
+    @field_validator("updated")
+    @classmethod
+    def _validate_updated(cls, v: str) -> str:
+        try:
+            datetime.fromisoformat(v.replace("Z", "+00:00"))
+        except ValueError as e:
+            raise ValueError(f"Invalid ISO 8601 timestamp: {v!r}") from e
+        return v
+
+
+def empty_team_scratch() -> TeamScratchFile:
+    """Construct a fresh, empty TeamScratchFile with the current timestamp."""
+    return TeamScratchFile(version=1, updated=now_iso())
 
 
 def now_iso() -> str:

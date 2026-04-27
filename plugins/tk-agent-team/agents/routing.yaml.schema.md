@@ -34,7 +34,7 @@ Field semantics:
 - `signals` — phrases or regexes. The orchestrator matches case-insensitive substring by default; an entry wrapped in `re:/.../` is interpreted as a regex.
 - `task_type` — coarse classification used in metrics and downstream skill routing decisions.
 - `skill` — the canonical skill or direct-agent dispatch target. A literal skill command (`/debug`) or a bare agent name (`researcher`) are both valid.
-- `team_pattern` — the catalog value from `_shared/team-protocol.md`. The lint script validates that the dispatched skill's frontmatter `team_pattern` agrees with this value.
+- `team_pattern` — the catalog value from `_shared/team-protocol.md` (one of: `solo`, `pair`, `parallel-panel`, `pipeline`, `staged-team`, `feature-team`). The lint script validates each SKILL.md's frontmatter `team_pattern` against this catalog. Cross-checking that a rule's `team_pattern` agrees with the dispatched skill's frontmatter `team_pattern` is the responsibility of `tests/test_routing.py` (Task 12), not lint.
 - `families` — the minimum pre-load set for this rule. Always include `_shared`. Specialist cross-family reads remain at the teammate layer (per `_shared/memory-protocol.md`) and MUST NOT be duplicated here.
 - `augmentations` — additive family pre-loads gated on additional prompt signals. Stack ON TOP of `families`, never replace.
 
@@ -99,5 +99,5 @@ overrides:
 - `rules[*].families[*]` and `augmentations[*].families[*]` MUST be either `_shared` or a real family directory under `agents/`.
 - `rules[*].skill` MUST resolve to either a real `skills/<skill>/SKILL.md` or a real agent name.
 - `overrides[*].force_skill` MUST resolve as above.
-- The dispatched skill's frontmatter `team_pattern` MUST equal the rule's `team_pattern` (cross-checked by `scripts/lint-agents.sh`).
+- The dispatched skill's frontmatter `team_pattern` MUST equal the rule's `team_pattern` (cross-checked by `tests/test_routing.py`; lint validates each SKILL.md's `team_pattern` against the catalog independently).
 - `tests/test_routing.py` (Task 12) loads this file and asserts `(skill, team_pattern, families)` for ≥20 historical prompt fixtures, including: happy paths per rule, override paths (stack-trace force), and augmentation stacking ("ship the React landing page with growth tracking" → base `families` + `framework` + `marketing`).

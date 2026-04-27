@@ -288,15 +288,37 @@ def team_memory_append(
 ) -> dict[str, Any]:
     """Append a single item to a team's scratch memory file.
 
-    Same schema as memory_append. The file is created on first append.
+    Team scratch uses a DIFFERENT taxonomy than `memory_append`. It records
+    team-level coordination events (handoffs, peer-DM dedup, escalations,
+    durable team decisions) rather than per-agent expertise items. The
+    file is created on first append. See
+    `skills/_shared/team-protocol.md#team-memory-section-taxonomy`.
 
     Args:
         team_name: The team's slug
-        section: One of "patterns", "pitfalls", "decisions", "open_questions"
-        item: The item to append (same shape as memory_append)
+        section: One of:
+            - "decisions" — durable team-coordination outcomes
+              ("Stage 1 complete; spawning review stage").
+            - "dedup_decisions" — `parallel-panel` peer-DM dedup outcomes
+              ("correctness deferred to security on auth.py:8").
+            - "handoffs" — `staged-team` / `pipeline` stage transitions,
+              including the artifact path handed forward.
+            - "escalations" — blocker reports requiring orchestrator-level
+              intervention.
+        item: A dict matching the team-scratch item shape:
+            - id: str (slug, required)
+            - summary: str (required, what happened)
+            - kind: str | None (free-form tag, e.g. "stage_transition")
+            - from_stage, to_stage: str | None (handoffs)
+            - artifact_path: str | None (handoffs)
+            - peers: list[str] | None (dedup_decisions: who deferred to whom)
+            - severity: str | None (escalations)
+            - details: str | None (free-form rationale)
+            - protected: bool (default False; respect during curation)
 
     Returns:
-        Same shape as memory_append.
+        Same shape as memory_append: {ok, char_count, warning,
+        needs_curation, error}.
     """
     try:
         result = team_storage.append(team_name, section, item)
