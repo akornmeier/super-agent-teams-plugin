@@ -133,18 +133,23 @@ def classify(prompt: str, routing: dict) -> dict:
 
     if matched_rule is None:
         # No signal matched: per orchestrator override "treat as exploration".
-        # Surface that as a synthetic exploration result.
+        # Surface that as a synthetic exploration result. `augmentations` is
+        # tracked separately so any override can stack them onto the forced
+        # skill's native families.
         result = {
             "skill": "researcher",
             "task_type": "exploration",
             "team_pattern": "solo",
             "families": {"_shared", "researcher"},
         }
+        augmentation_families: set[str] = set()
     else:
         families = set(matched_rule["families"])
+        augmentation_families = set()
         for aug in matched_rule.get("augmentations") or []:
             if _augmentation_fires(aug["trigger"], prompt_lower):
-                families.update(aug["families"])
+                augmentation_families.update(aug["families"])
+        families.update(augmentation_families)
         result = {
             "skill": matched_rule["skill"],
             "task_type": matched_rule["task_type"],
@@ -155,7 +160,22 @@ def classify(prompt: str, routing: dict) -> dict:
     for override in routing["overrides"]:
         if _condition_met(override["condition"], prompt):
             if "force_skill" in override:
-                result["skill"] = override["force_skill"]
+                forced_skill = override["force_skill"]
+                forced_rule = next(
+                    (r for r in routing["rules"] if r["skill"] == forced_skill),
+                    None,
+                )
+                if forced_rule is None:
+                    raise AssertionError(
+                        f"override forces skill {forced_skill!r} but no rule "
+                        f"in routing.yaml declares that skill — routing data "
+                        f"inconsistency."
+                    )
+                result["skill"] = forced_skill
+                result["team_pattern"] = forced_rule["team_pattern"]
+                # Forced skill's native families plus any augmentations that
+                # the originally-matched rule's prompt triggered.
+                result["families"] = set(forced_rule["families"]) | augmentation_families
             if "force_task_type" in override:
                 result["task_type"] = override["force_task_type"]
             break
@@ -270,29 +290,32 @@ HAPPY_PATH_CASES = [
 
 OVERRIDE_CASES = [
     # Stack trace forces /debug even though surface words say "feature".
+    # team_pattern + families switch to /debug's native rule; no augmentations
+    # from the feature rule fire on this prompt so nothing stacks on top.
     (
         'I want to add a new feature but first: Traceback (most recent call last):\n'
         '  File "app.py", line 42, in main\n    raise ValueError("nope")',
         "/debug",
         "bugfix",
-        "staged-team",  # team_pattern stays from the matched rule (feature)
-        {"_shared", "planner", "developer", "reviewer", "tester"},
+        "pipeline",
+        {"_shared", "researcher", "debugger", "reviewer", "developer"},
     ),
     # JS-style stack trace also triggers stack_trace_present.
     (
         "build the integration. Got: at handler (/srv/app.js:101)",
         "/debug",
         "bugfix",
-        "staged-team",
-        {"_shared", "planner", "developer", "reviewer", "tester"},
+        "pipeline",
+        {"_shared", "researcher", "debugger", "reviewer", "developer"},
     ),
     # docs/plans/*.md path forces /work even though words say "implement".
+    # team_pattern + families switch to /work's native rule.
     (
         "implement the work outlined in docs/plans/2026-04-foo.md",
         "/work",
         "feature",
-        "staged-team",
-        {"_shared", "planner", "developer", "reviewer", "tester"},
+        "solo",
+        {"_shared", "engineering", "planner", "developer", "reviewer"},
     ),
 ]
 
