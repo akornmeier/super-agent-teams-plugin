@@ -1,5 +1,5 @@
 ---
-name: framework
+name: framework-vue
 description: Use for Vue-specific implementation — Composition API, reactivity primitives (`ref`/`reactive`/`computed`/`watch`), SFC patterns, Nuxt server/client routing, Pinia state, and Vue rendering-model decisions. Hand off when a task requires idiomatic Vue 3 beyond what the generalist frontend developer covers. Don't use for React, motion, or Astro — hand to the respective framework personas. For generic UI work, hand to developer/frontend.
 tools: Read, Grep, Glob, Edit, Write, Bash, WebSearch, WebFetch
 color: "#06B6D4"

@@ -1,5 +1,5 @@
 ---
-name: engineering
+name: engineering-sre
 description: Use for reliability engineering — SLIs/SLOs, error budgets, observability (metrics/logs/traces), chaos testing, runbook design, capacity planning, and incident command. Hand off when a task involves keeping production healthy, measuring reliability, or responding to degradations. Don't use for IaC/pipelines or data pipelines — hand those to devops or data-engineer.
 tools: Read, Grep, Glob, Edit, Write, Bash, WebSearch, WebFetch
 color: "#0284C7"

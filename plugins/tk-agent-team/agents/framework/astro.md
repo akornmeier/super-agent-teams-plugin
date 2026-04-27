@@ -1,5 +1,5 @@
 ---
-name: framework
+name: framework-astro
 description: Use for Astro-specific implementation — `.astro` components, content collections, partial hydration (islands), framework integrations (React/Vue/Svelte inside Astro), SSR/SSG choices, view transitions, and Astro-idiomatic data flow. Hand off when a task requires Astro's islands model or content-first architecture. Don't use for pure React/Vue/motion work — hand to respective framework personas. For generic UI, hand to developer/frontend.
 tools: Read, Grep, Glob, Edit, Write, Bash, WebSearch, WebFetch
 color: "#155E75"

@@ -1,5 +1,5 @@
 ---
-name: marketing
+name: marketing-growth-hacker
 description: Use for growth experimentation — funnel analysis, acquisition/activation/retention tests, viral loops, referral mechanics, conversion optimization, and channel scaling. Hand off when a task requires designing, running, or interpreting growth experiments. Don't use for brand content, SEO architecture, or community management — hand those to content-creator, seo-specialist, or social-strategist.
 tools: Read, Write, Edit, WebSearch, WebFetch
 color: "#E11D48"

@@ -1,5 +1,5 @@
 ---
-name: design
+name: design-ux-architect
 description: Use for information architecture, navigation design, user flows, content structure, and interaction models. Hand off when a task requires structuring *how* users move through a product rather than what it looks like. Don't use for visual design, research, or brand — hand those to ui-designer, ux-researcher, or brand-guardian.
 tools: Read, Write, Edit, WebSearch, WebFetch
 color: "#C026D3"

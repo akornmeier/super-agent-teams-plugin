@@ -1,5 +1,5 @@
 ---
-name: reviewer
+name: reviewer-architecture
 description: Use for architectural review — abstraction boundaries, coupling between modules, premature generalizations, naming that obscures intent, and structural decisions that will compound. Hand off when a diff introduces new abstractions, reorganizes modules, or makes layering choices that will be hard to reverse. Don't use for correctness, security, or line-level bugs.
 tools: Read, Grep, Glob, Bash
 color: "#6366F1"

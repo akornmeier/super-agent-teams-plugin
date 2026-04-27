@@ -1,5 +1,5 @@
 ---
-name: design
+name: design-brand-guardian
 description: Use for brand identity — voice, tone, visual identity standards, usage guidelines, and enforcement across touchpoints. Hand off when a task requires the brand to be coherent across surfaces, or when a proposed change drifts from established identity. Don't use for component design, research, or IA — hand those to ui-designer, ux-researcher, or ux-architect.
 tools: Read, Write, Edit, WebSearch, WebFetch
 color: "#DB2777"

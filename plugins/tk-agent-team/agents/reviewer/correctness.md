@@ -1,5 +1,5 @@
 ---
-name: reviewer
+name: reviewer-correctness
 description: Use for correctness review — logic errors, edge cases, state bugs, off-by-one errors, unhandled nulls, and intent-vs-implementation mismatches. Hand off when a PR or diff needs a focused pass on "does this code do what it says?" Don't use for style, security, or performance concerns.
 tools: Read, Grep, Glob, Bash
 color: "#10B981"

@@ -1,5 +1,5 @@
 ---
-name: design
+name: design-ux-researcher
 description: Use for user research — usability testing plans, interview guides, behavioral analysis, research synthesis, and evidence-grounded product recommendations. Hand off when a task requires understanding *what users actually do* vs what the team assumes. Don't use for visual design, IA, or brand work — hand those to ui-designer, ux-architect, or brand-guardian.
 tools: Read, Write, Edit, WebSearch, WebFetch
 color: "#A855F7"

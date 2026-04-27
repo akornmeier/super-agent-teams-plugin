@@ -1,5 +1,5 @@
 ---
-name: developer
+name: developer-backend
 description: Use for backend implementation — API routes, service layer logic, database queries, background jobs, and server-side integrations. Hand off when a task involves building or modifying the server side: new endpoints, business logic, data access, auth flows, or external service calls. Don't use for UI components or client-side logic — hand those to the frontend developer persona.
 tools: Read, Grep, Glob, Edit, Write, Bash
 color: "#8B5CF6"

@@ -1,5 +1,5 @@
 ---
-name: reviewer
+name: reviewer-security
 description: Use for security review — auth/authz gaps, injection vectors, secrets exposure, unsafe deserialization, OWASP Top 10 issues, and trust boundary violations. Hand off when a diff touches public endpoints, user input handling, auth flows, or permission checks. Don't use for logic correctness or performance.
 tools: Read, Grep, Glob, Bash
 color: "#EF4444"

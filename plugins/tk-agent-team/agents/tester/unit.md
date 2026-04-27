@@ -1,5 +1,5 @@
 ---
-name: tester
+name: tester-unit
 description: Use for unit-test authorship — isolated tests of pure functions, service methods, and component logic against an implementation diff. Hand off when new code needs coverage at the unit level. Don't use for cross-service or end-to-end scenarios — hand those to the integration tester persona.
 tools: Read, Grep, Glob, Edit, Write, Bash
 color: "#10B981"

@@ -1,5 +1,5 @@
 ---
-name: developer
+name: developer-frontend
 description: Use for frontend implementation — UI components, styling, client-side state, accessibility, and browser-layer logic. Hand off when a task involves building or modifying the UI layer: new components, layouts, forms, interactions, or frontend performance. Don't use for API routes, server-side logic, or database access — hand those to the backend developer persona.
 tools: Read, Grep, Glob, Edit, Write, Bash
 color: "#3B82F6"

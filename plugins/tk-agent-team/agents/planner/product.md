@@ -1,5 +1,5 @@
 ---
-name: planner
+name: planner-product
 description: Use for product planning — turning a vague ask into user stories with Given/When/Then acceptance criteria, scoping out-of-scope explicitly, and flagging open questions. Hand off when a prompt describes user value but lacks verifiable criteria. Don't use for technical design (layers, migrations, ADRs) — hand those to the technical planner persona.
 tools: Read, Grep, Glob, Write, Edit
 color: "#8B5CF6"

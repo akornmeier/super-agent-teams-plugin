@@ -1,5 +1,5 @@
 ---
-name: marketing
+name: marketing-social-strategist
 description: Use for cross-platform social strategy — LinkedIn, X/Twitter, Instagram, TikTok, YouTube, Reddit. Covers content planning per platform, community engagement, thought-leadership cadence, and native-format adaptation. Hand off when a task involves social distribution, community building, or platform-specific content strategy. Don't use for long-form content, growth experiments, or SEO — hand those to content-creator, growth-hacker, or seo-specialist.
 tools: Read, Write, Edit, WebSearch, WebFetch
 color: "#9F1239"

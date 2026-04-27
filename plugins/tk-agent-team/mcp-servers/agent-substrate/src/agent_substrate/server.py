@@ -7,9 +7,11 @@ Five tools:
   - memory_read_shared()
   - memory_append_shared(section, item)
 
-The server reads its base directory from the AGENT_SUBSTRATE_BASE_DIR
-environment variable, defaulting to `./.agent-memory` relative to the
-current working directory of the spawning process.
+The server requires the AGENT_SUBSTRATE_BASE_DIR environment variable to
+be set to an absolute path. The launcher (typically `.mcp.json`) is
+responsible for configuring it; failing fast at module load avoids
+silently writing memory under whatever cwd the process happened to start
+in.
 """
 
 from __future__ import annotations
@@ -24,9 +26,18 @@ from .storage import HARD_LIMIT, SOFT_LIMIT, MemoryStorage
 
 # --- Server setup -----------------------------------------------------------
 
-BASE_DIR = Path(
-    os.environ.get("AGENT_SUBSTRATE_BASE_DIR", ".agent-memory")
-).resolve()
+_base_dir_env = os.environ.get("AGENT_SUBSTRATE_BASE_DIR")
+if not _base_dir_env:
+    raise RuntimeError(
+        "AGENT_SUBSTRATE_BASE_DIR environment variable must be set. "
+        "Configure it in .mcp.json or your environment."
+    )
+BASE_DIR = Path(_base_dir_env).expanduser()
+if not BASE_DIR.is_absolute():
+    raise RuntimeError(
+        f"AGENT_SUBSTRATE_BASE_DIR must be an absolute path, got {_base_dir_env!r}"
+    )
+BASE_DIR = BASE_DIR.resolve()
 
 mcp = FastMCP("agent-substrate")
 storage = MemoryStorage(BASE_DIR)

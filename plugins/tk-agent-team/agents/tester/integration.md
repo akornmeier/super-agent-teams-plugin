@@ -1,5 +1,5 @@
 ---
-name: tester
+name: tester-integration
 description: Use for integration and end-to-end test authorship — scenarios crossing service boundaries, API contracts, database interactions, and adversarial inputs. Hand off when new code introduces or changes a contract between components. Don't use for isolated unit logic — hand that to the unit tester persona.
 tools: Read, Grep, Glob, Edit, Write, Bash
 color: "#10B981"

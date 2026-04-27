@@ -1,5 +1,5 @@
 ---
-name: framework
+name: framework-react
 description: Use for React-specific implementation — hooks, component composition, server/client components, suspense/streaming, state management choices (context/zustand/redux/query), and rendering-model decisions. Hand off when a task requires idiomatic React beyond what the generalist frontend developer covers. Don't use for Vue, motion libraries, or Astro — hand those to the respective framework personas. For generic UI work, hand to developer/frontend.
 tools: Read, Grep, Glob, Edit, Write, Bash, WebSearch, WebFetch
 color: "#22D3EE"

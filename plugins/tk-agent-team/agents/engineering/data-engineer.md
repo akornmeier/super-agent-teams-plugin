@@ -1,5 +1,5 @@
 ---
-name: engineering
+name: engineering-data-engineer
 description: Use for data pipeline work — ETL/ELT design, warehouse/lakehouse modeling, batch and streaming ingestion, dbt/Spark/Airflow/Flink, data quality, lineage, and schema evolution. Hand off when a task involves moving or modeling data between systems. Don't use for application DB queries, infrastructure provisioning, or ML training — hand those to developer, devops, or ai-engineer.
 tools: Read, Grep, Glob, Edit, Write, Bash, WebSearch, WebFetch
 color: "#075985"
