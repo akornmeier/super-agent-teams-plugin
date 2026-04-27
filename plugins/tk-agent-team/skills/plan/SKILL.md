@@ -59,7 +59,7 @@ Canonical artifact path: `docs/plans/<YYYY-MM-DD>-<slug>-plan.md`.
 ```yaml
 artifact_path: docs/plans/<YYYY-MM-DD>-<slug>-plan.md
 status: complete          # complete | blocked | needs_human
-memory_appends: [planner, reviewer]
+memory_findings: [planner, reviewer]
 next_skill_hint: /work
 ```
 

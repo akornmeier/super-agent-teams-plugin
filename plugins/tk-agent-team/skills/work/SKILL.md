@@ -67,7 +67,7 @@ Canonical artifact path: `docs/work/<YYYY-MM-DD>-<slug>-work.md` (short status s
 ```yaml
 artifact_path: docs/work/<YYYY-MM-DD>-<slug>-work.md
 status: complete          # complete | blocked | needs_human
-memory_appends: [developer]
+memory_findings: [developer]
 next_skill_hint: /review
 ```
 

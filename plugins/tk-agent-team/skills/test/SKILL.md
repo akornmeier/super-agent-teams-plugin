@@ -55,7 +55,7 @@ Canonical artifact path: `docs/tests/<YYYY-MM-DD>-<slug>-test-report.md`.
 ```yaml
 artifact_path: docs/tests/<YYYY-MM-DD>-<slug>-test-report.md
 status: complete          # complete | blocked | needs_human
-memory_appends: [tester]
+memory_findings: [tester]
 next_skill_hint: /ship    # or /compound if cycle is wrapping up
 ```
 

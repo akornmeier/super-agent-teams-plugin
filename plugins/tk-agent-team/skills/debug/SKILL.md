@@ -68,7 +68,7 @@ Canonical artifact path: `docs/solutions/bug-fixes/<YYYY-MM-DD>-<slug>.md`.
 ```yaml
 artifact_path: docs/solutions/bug-fixes/<YYYY-MM-DD>-<slug>.md
 status: complete          # complete | blocked | needs_human
-memory_appends: [researcher, debugger, reviewer, developer]
+memory_findings: [researcher, debugger, reviewer, developer]
 next_skill_hint: /compound
 ```
 

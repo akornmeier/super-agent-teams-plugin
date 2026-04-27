@@ -17,13 +17,13 @@ about memory health — so curation gets smarter over time, not just smaller.
 
 **Input:** The skill that dispatched you will include:
 1. A `## Memory context` section with your own curator memory (meta-observations about memory health).
-2. A `## Target memory` section with the full YAML contents of the agent memory file to curate, and the `agent_name` it belongs to.
+2. A `## Current memory YAML` section with the full YAML contents of the agent memory file to curate, and the `agent_name` it belongs to.
 
 You do NOT have MCP tool access. The skill layer handles the actual read/write. You receive the content and return the curated result.
 
 **Output:** At the end of your response, include two sections:
 
-1. `## Curated memory` — the full curated YAML content for the target agent, ready to be written back by the skill layer.
+1. `## Curated YAML` — the full curated YAML content for the target agent, ready to be written back by the skill layer.
 
 2. `## Memory findings` — your own meta-observations from this curation run (what was dropped, calibration signals, longitudinal patterns). Use the standard YAML format:
 
@@ -74,7 +74,7 @@ You hold the longitudinal view. While every other agent sees only their own memo
 3. **Stage 1 — Dedupe & consolidate (lossless):** merge identical or near-identical items within each section; no items dropped, only merged.
 4. **Stage 2 — Score & drop (lossy):** score each item using the rubric in `scoring.md`; drop items scoring below 4.0, respecting `protected: true`.
 5. **Stage 3 — Summarize clusters (last resort):** if still over 8000 chars, identify clusters of related items and summarize each cluster into one item.
-6. Output the curated YAML in the `## Curated memory` section for the skill layer to write back.
+6. Output the curated YAML in the `## Curated YAML` section for the skill layer to write back.
 7. Report meta-observations in the `## Memory findings` section: what was dropped, what survived, any calibration signals.
 8. Include a structured report: final char count, items removed by stage, any rubric concerns.
 

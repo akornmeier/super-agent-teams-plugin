@@ -44,7 +44,7 @@ Determine the solution category from `references/categories.md` based on the dri
 
 ### Stage 2: Curate memories
 
-Enumerate every family whose memory was appended during the cycle (read `memory_appends` from each sub-skill's summary). For each family, dispatch `/memory-curate` if its memory file is near or over the soft limit. The `/memory-curate` skill handles its own memory read/write cycle (reading the current YAML, passing it to the curator subagent, then writing the curated result back) — you do not override or duplicate curation policy here.
+Enumerate every family whose memory was appended during the cycle (read `memory_findings` from each sub-skill's summary). For each family, dispatch `/memory-curate` if its memory file is near or over the soft limit. The `/memory-curate` skill handles its own memory read/write cycle (reading the current YAML, passing it to the curator subagent, then writing the curated result back) — you do not override or duplicate curation policy here.
 
 ### Stage 3: Consolidated summary
 
@@ -57,7 +57,7 @@ Canonical artifact path: `docs/solutions/<category>/<YYYY-MM-DD>-<slug>.md` (pri
 ```yaml
 artifact_path: docs/solutions/<category>/<YYYY-MM-DD>-<slug>.md
 status: complete          # complete | blocked | needs_human
-memory_appends: [docs-writer]
+memory_findings: [docs-writer]
 memory_curated: [planner, developer, reviewer, tester]   # actual families vary by cycle
 next_skill_hint: null
 ```

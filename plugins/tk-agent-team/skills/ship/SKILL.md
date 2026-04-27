@@ -16,7 +16,7 @@ You are the composite cycle. You do not dispatch agents directly — you dispatc
 
 This is a composite skill that dispatches other skills (`/work`, `/review`, `/test`). Each sub-skill handles its own memory reads and writes per its own `## Memory protocol (skill layer)` section. This skill does NOT read or write memory directly — it delegates that responsibility to the sub-skills it invokes.
 
-The only memory-related responsibility of `/ship` is to confirm that each sub-skill's `memory_appends` list is non-empty in its returned summary. If a sub-skill returns an empty `memory_appends`, log a warning.
+The only memory-related responsibility of `/ship` is to confirm that each sub-skill's `memory_findings` list is non-empty in its returned summary. If a sub-skill returns an empty `memory_findings`, log a warning.
 
 ## Stages
 
@@ -52,7 +52,7 @@ Canonical artifact path: `docs/ship/<YYYY-MM-DD>-<slug>-ship.md`.
 ```yaml
 artifact_path: docs/ship/<YYYY-MM-DD>-<slug>-ship.md
 status: complete          # complete | blocked | needs_human
-memory_appends: [developer, reviewer, tester]
+memory_findings: [developer, reviewer, tester]
 sub_artifacts:
   work: docs/work/<slug>-work.md
   review: docs/reviews/<slug>-review.md
@@ -62,7 +62,7 @@ next_skill_hint: /compound
 
 ## Invariants (never violate)
 
-- Each sub-skill (`/work`, `/review`, `/test`) must persist its subagents' memory findings via `memory_append` before returning. `/ship` confirms this by checking each sub-skill's `memory_appends` list is non-empty. If a sub-skill returns an empty list, log a warning.
+- Each sub-skill (`/work`, `/review`, `/test`) must persist its subagents' memory findings via `memory_append` before returning. `/ship` confirms this by checking each sub-skill's `memory_findings` list is non-empty. If a sub-skill returns an empty list, log a warning.
 - Halt-on-blocker is strict: never run `/test` against a diff with unresolved review blockers.
 - Autofix retry is limited to **one pass** in stage 2. A second oscillation is always `status: blocked`.
 - Never invoke sub-skills in parallel — the pipeline order `/work → /review → /test` is load-bearing.

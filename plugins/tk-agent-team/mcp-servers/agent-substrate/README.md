@@ -33,15 +33,23 @@ pip install -e ".[dev]"
 
 ## Wire into Claude Code
 
-The plugin's `.mcp.json` handles this automatically. It uses the absolute path to the venv's Python so the server starts reliably regardless of shell state:
+The plugin's `.mcp.json` handles this automatically. It uses [`uv run`](https://docs.astral.sh/uv/) so the server starts without manual venv management — `uv` resolves the environment from the project's `pyproject.toml` on demand. Requires `uv` to be installed ([install guide](https://docs.astral.sh/uv/)).
 
 ```json
 {
   "mcpServers": {
     "agent-substrate": {
       "type": "stdio",
-      "command": "/absolute/path/to/.venv/bin/python",
-      "args": ["-m", "agent_substrate"]
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "${CLAUDE_PLUGIN_ROOT}/mcp-servers/agent-substrate",
+        "agent-substrate"
+      ],
+      "env": {
+        "AGENT_SUBSTRATE_BASE_DIR": "${CLAUDE_PROJECT_DIR}/.agent-memory"
+      }
     }
   }
 }

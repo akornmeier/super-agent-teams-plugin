@@ -55,7 +55,7 @@ Return this structured summary:
 ```yaml
 artifact_path: docs/ideation/<YYYY-MM-DD>-<slug>.md
 status: complete          # complete | blocked | needs_human
-memory_appends: [planner, researcher]
+memory_findings: [planner, researcher]
 next_skill_hint: /brainstorm
 ```
 

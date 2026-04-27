@@ -89,7 +89,7 @@ The plugin ships ten **skills**, not traditional slash commands. Claude Code aut
 
 **A shared file for project conventions.** `_shared.yaml` holds the whole-team facts: language, framework, house style, standing decisions. Every skill reads it before dispatching agents. The orchestrator is the only agent that writes to it — for consensus decisions the team converged on mid-cycle.
 
-**Curation on overflow, not on schedule.** Every memory file has a 6000-char soft limit and an 8000-char hard limit. When a write approaches the limit, the MCP server returns a warning and the skill dispatches the `curator` via `memory-curate`: three stages (dedupe → score-and-drop → summarize) that shrink the file while protecting load-bearing items. Storage is dumb; curation is policy.
+**Curation on overflow, not on schedule.** Every memory file has an 8000-char soft limit and a 10000-char hard limit. When a write approaches the soft limit, the MCP server returns a `warning`; once a write hits the hard limit, it returns `needs_curation: true` and the write is rejected. The skill then dispatches the `curator` via `memory-curate`: three stages (dedupe → score-and-drop → summarize) that shrink the file while protecting load-bearing items. Storage is dumb; curation is policy.
 
 ## Quickstart
 
@@ -131,7 +131,7 @@ From there, `brainstorm` → `plan` → `ship` takes one ranked idea to shipped 
 
 ## Tips for users
 
-- **Skills trigger on intent, not exact wording.** Each skill's description lists the phrasing that fires it (see `plugins/tk-agent-team/.claude-plugin/plugin.json`). If auto-detection misses, prefix with the skill name: `/plan migrate to Postgres`.
+- **Skills trigger on intent, not exact wording.** Each skill's description lists the phrasing that fires it (see the frontmatter `description` field in each `plugins/tk-agent-team/skills/*/SKILL.md`). If auto-detection misses, prefix with the skill name: `/plan migrate to Postgres`.
 - **Every run writes an artifact.** Check `docs/ideation/`, `docs/brainstorms/`, `docs/plans/`, or `docs/solutions/` after each skill — that file is the handoff for the next stage.
 - **Memory lives in `.agent-memory/`.** Inspect `<family>.yaml` to see what a team remembers; `_shared.yaml` holds project-wide conventions. Delete a file if you want a clean slate.
 - **Don't call individual agents directly for end-to-end work.** Let the skill dispatch them — skills handle all memory I/O (reading before dispatch, writing after return) that makes the team get smarter. Subagents don't have direct MCP access; the skill layer brokers it. Use direct `Agent` invocations only for one-off specialist questions (but note: those won't read or write memory).

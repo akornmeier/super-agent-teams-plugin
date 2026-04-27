@@ -52,7 +52,7 @@ Canonical artifact path: `docs/brainstorms/<YYYY-MM-DD>-<slug>-requirements.md`.
 ```yaml
 artifact_path: docs/brainstorms/<YYYY-MM-DD>-<slug>-requirements.md
 status: complete          # complete | blocked | needs_human
-memory_appends: [planner]
+memory_findings: [planner]
 next_skill_hint: /plan
 ```
 

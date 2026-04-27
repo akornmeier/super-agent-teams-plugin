@@ -58,7 +58,7 @@ Canonical artifact path: `docs/reviews/<YYYY-MM-DD>-<slug>-review.md`.
 ```yaml
 artifact_path: docs/reviews/<YYYY-MM-DD>-<slug>-review.md
 status: complete          # complete | blocked | needs_human
-memory_appends: [reviewer, developer]   # developer only if autofix ran
+memory_findings: [reviewer, developer]   # developer only if autofix ran
 next_skill_hint: /test
 ```
 
