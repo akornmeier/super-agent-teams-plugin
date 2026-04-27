@@ -25,6 +25,37 @@ The plugin ships ten **skills**, not traditional slash commands. Claude Code aut
 | `compound` | end of a cycle; "capture what we learned" | Solution doc in `docs/solutions/` + curation of every touched family memory |
 | `memory-curate` | auto-fires when a memory file approaches its soft limit | Shrunk memory file: dedupe → score-and-drop → summarize |
 
+## Teams (v0.4)
+
+v0.4 introduces real teams. Composite skills create persistent named teammates that share a `TaskList`, DM each other directly, and shut down when the work is done. Solo skills still run as before. The orchestrator picks based on `routing.yaml`.
+
+### The six team patterns
+
+| Pattern | When | Coordination | Member rotation | Example skill |
+|---------|------|--------------|-----------------|---------------|
+| `solo` | Sequential, short tasks; no peer negotiation needed. | None — single dispatch. | n/a | `/ideate`, `/brainstorm`, `/plan` |
+| `pair` | Two specialists negotiate a shared contract. | Direct DM. | Both persist for the task. | `/work` (full-stack mode) |
+| `parallel-panel` | N specialists work the same input, dedupe findings. | DM for severity ≤ minor; team-lead arbitrates severity ≥ major. | All persist. | `/review` |
+| `pipeline` | Sequential stages with explicit `addBlockedBy` chain. | TaskList history. | Author discretion. | `/debug` |
+| `staged-team` | Multi-stage; downstream stages **check** upstream stages. | TaskList + handoff records. | **Members rotate per stage** (bias avoidance). | `/ship` |
+| `feature-team` | Multi-stage; downstream stages **build on** upstream context. | TaskList + DM. | Members **persist** across stages. | (none default — must be explicitly justified) |
+
+**Default rule:** when adding a new multi-stage skill, choose `staged-team` unless you can articulate why downstream stages need carry-over context. Lint enforces a `### Why feature-team` justification section for any `feature-team` skill.
+
+### What's preserved from v0.3
+
+- Per-family durable memory at `<base>/<family>.yaml` — same 8 KB/10 KB caps, atomic writes, lock semantics.
+- Specialist cross-family reads — every read documented in `specs/foundation-notes.md` §5 still happens, just at the teammate layer instead of being amassed at the orchestrator.
+- `_shared.yaml` project conventions — orchestrator and team-leads are the only writers (race-free).
+- `/compound` and `/memory-curate` — unchanged.
+
+### What's new
+
+- **`team-substrate`** namespace at `<base>/teams/<team-name>/` for ephemeral team scratch (handoffs, dedup decisions, escalations). Cleaned up by `TeamDelete`.
+- **`memory_findings_submit`** MCP tool — Pydantic-validated wire format for findings. Replaces v0.3's prose-parsed `## Memory findings` YAML block (which silently dropped malformed input).
+- **`team-lead`** archetype — in-team coordinator that owns TaskList, performs parallel-panel dedup-arbiter for severity ≥ major findings, runs the shutdown sequence.
+- **`routing.yaml`** — the orchestrator's classification table is now a data file with pytest fixtures. Adding a route is a YAML edit, not a markdown table edit.
+
 ## The team
 
 **30 personas across 8 families and 5 solos.** Every persona uses the same 8-section personality template and participates in the shared memory system.
