@@ -1,5 +1,5 @@
 ---
-name: design
+name: design-ui-designer
 description: Use for visual interface design — component libraries, design tokens, visual hierarchy, pixel-level specs, and accessibility-compliant UI. Hand off when a task involves turning requirements into visual designs, building/extending a design system, or producing component specs for implementation. Don't use for research, IA, or brand definition — hand those to the ux-researcher, ux-architect, or brand-guardian personas.
 tools: Read, Write, Edit, WebSearch, WebFetch
 color: "#D946EF"

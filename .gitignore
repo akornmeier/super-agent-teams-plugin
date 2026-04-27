@@ -16,8 +16,11 @@
 *.orig
 
 # Logs
-logs/
+/logs/
 *.log
+plugins/tk-agent-team/agents/logs/
+plugins/tk-agent-team/skills/logs/
+plugins/tk-agent-team/mcp-servers/agent-substrate/logs/
 
 # Python
 __pycache__/

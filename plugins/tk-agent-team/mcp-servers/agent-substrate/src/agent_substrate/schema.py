@@ -12,7 +12,7 @@ import re
 from datetime import datetime, timezone
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 # --- Identifiers ------------------------------------------------------------
 
@@ -25,6 +25,20 @@ ITEM_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]{0,127}$")
 
 VALID_SECTIONS = ("patterns", "pitfalls", "decisions", "open_questions")
 SectionName = Literal["patterns", "pitfalls", "decisions", "open_questions"]
+
+# Team-scratch sections — distinct taxonomy from agent-memory. Used by
+# `team_memory_append` to record team-level coordination events (handoffs,
+# peer-DM dedup outcomes, blocker escalations, durable team decisions). See
+# `skills/_shared/team-protocol.md#team-memory-section-taxonomy`.
+VALID_TEAM_SECTIONS = (
+    "decisions",
+    "dedup_decisions",
+    "handoffs",
+    "escalations",
+)
+TeamSectionName = Literal[
+    "decisions", "dedup_decisions", "handoffs", "escalations"
+]
 
 
 def validate_agent_name(name: object) -> None:
@@ -50,6 +64,15 @@ def validate_section(section: object) -> None:
     if section not in VALID_SECTIONS:
         raise ValueError(
             f"Invalid section: {section!r}. Must be one of {VALID_SECTIONS}."
+        )
+
+
+def validate_team_section(section: object) -> None:
+    """Raise ValueError if section is not a valid team-scratch section."""
+    if section not in VALID_TEAM_SECTIONS:
+        raise ValueError(
+            f"Invalid team-scratch section: {section!r}. "
+            f"Must be one of {VALID_TEAM_SECTIONS}."
         )
 
 
@@ -82,6 +105,8 @@ class Pattern(_ItemBase):
 
     summary: str
     evidence: str | None = None
+    related: list[str] | None = None
+    lens: str | None = None
     protected: bool = False
 
 
@@ -90,6 +115,8 @@ class Pitfall(_ItemBase):
 
     summary: str
     why: str | None = None
+    related: list[str] | None = None
+    lens: str | None = None
     protected: bool = False
 
 
@@ -99,6 +126,8 @@ class Decision(_ItemBase):
     choice: str
     rationale: str | None = None
     supersedes: str | None = None
+    related: list[str] | None = None
+    lens: str | None = None
     protected: bool = False
 
 
@@ -106,6 +135,8 @@ class OpenQuestion(_ItemBase):
     """Something the agent is uncertain about."""
 
     question: str
+    related: list[str] | None = None
+    lens: str | None = None
     protected: bool = False
 
 
@@ -116,6 +147,60 @@ SECTION_MODELS: dict[str, type[_ItemBase]] = {
     "pitfalls": Pitfall,
     "decisions": Decision,
     "open_questions": OpenQuestion,
+}
+
+
+# --- Team-scratch item models ----------------------------------------------
+#
+# Team scratch is a SEPARATE namespace from per-agent memory. Its sections
+# record team-level coordination events, not the agent's expertise items.
+# Each section accepts a flexible item shape with a small required core
+# (`id`, `summary`) plus optional fields for the common coordination shapes
+# (`kind`, `from_stage`, `to_stage`, `artifact_path`, `peers`, `severity`,
+# `details`). All four sections share one item model since the differences
+# between handoff/dedup/escalation are mostly about which optional fields
+# get populated, not about disjoint required fields.
+
+
+class TeamScratchItem(_ItemBase):
+    """A single team-scratch coordination record.
+
+    Required: `id`, `summary`. All other fields are optional and capture
+    common shapes documented in `skills/_shared/team-protocol.md`:
+
+    - `handoffs`: stage transitions — populate `from_stage`, `to_stage`,
+      `artifact_path`.
+    - `dedup_decisions`: parallel-panel peer-DM dedup outcomes — populate
+      `peers` with the deferring/keeping teammates and `details` with the
+      rationale.
+    - `escalations`: blocker reports — populate `severity` and `details`.
+    - `decisions`: durable team-coordination outcomes — `summary` plus
+      optional `details`.
+
+    `kind` is a free-form tag (e.g., `"stage_transition"`,
+    `"peer_dedup"`, `"blocker"`) for downstream filtering. `protected`
+    follows the same curation-respect convention as agent-memory items.
+    """
+
+    summary: str
+    kind: str | None = None
+    from_stage: str | None = None
+    to_stage: str | None = None
+    artifact_path: str | None = None
+    peers: list[str] | None = None
+    severity: str | None = None
+    details: str | None = None
+    protected: bool = False
+
+
+# Map team-scratch section name -> Pydantic model. All four sections share
+# one model — the schema is intentionally flexible because team-scratch
+# records ephemeral coordination events, not curated knowledge.
+TEAM_SECTION_MODELS: dict[str, type[_ItemBase]] = {
+    "decisions": TeamScratchItem,
+    "dedup_decisions": TeamScratchItem,
+    "handoffs": TeamScratchItem,
+    "escalations": TeamScratchItem,
 }
 
 
@@ -158,6 +243,47 @@ def empty_memory() -> MemoryFile:
     return MemoryFile(version=1, updated=now_iso())
 
 
+class TeamScratchFile(BaseModel):
+    """Top-level schema for a team's scratch.yaml file.
+
+    Distinct from `MemoryFile`: the four sections are the team-scratch
+    taxonomy (decisions, dedup_decisions, handoffs, escalations) and each
+    list holds `TeamScratchItem`s.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    version: int = 1
+    updated: str  # ISO 8601 timestamp; set automatically on every write
+    decisions: list[TeamScratchItem] = Field(default_factory=list)
+    dedup_decisions: list[TeamScratchItem] = Field(default_factory=list)
+    handoffs: list[TeamScratchItem] = Field(default_factory=list)
+    escalations: list[TeamScratchItem] = Field(default_factory=list)
+
+    @field_validator("version")
+    @classmethod
+    def _validate_version(cls, v: int) -> int:
+        if v != 1:
+            raise ValueError(
+                f"Unsupported team scratch file version: {v}. Expected 1."
+            )
+        return v
+
+    @field_validator("updated")
+    @classmethod
+    def _validate_updated(cls, v: str) -> str:
+        try:
+            datetime.fromisoformat(v.replace("Z", "+00:00"))
+        except ValueError as e:
+            raise ValueError(f"Invalid ISO 8601 timestamp: {v!r}") from e
+        return v
+
+
+def empty_team_scratch() -> TeamScratchFile:
+    """Construct a fresh, empty TeamScratchFile with the current timestamp."""
+    return TeamScratchFile(version=1, updated=now_iso())
+
+
 def now_iso() -> str:
     """Current UTC time as an ISO 8601 string with Z suffix."""
     return (
@@ -165,3 +291,162 @@ def now_iso() -> str:
         .isoformat(timespec="seconds")
         .replace("+00:00", "Z")
     )
+
+
+# --- Findings wire format ---------------------------------------------------
+
+# Mapping from FindingItem.kind to the section it must be filed under.
+# The substrate enforces that section and kind agree (see Finding._validate_*).
+KIND_TO_SECTION: dict[str, str] = {
+    "pattern": "patterns",
+    "pitfall": "pitfalls",
+    "decision": "decisions",
+    "open_question": "open_questions",
+}
+
+
+class FindingItem(BaseModel):
+    """Inner payload of a Finding submitted by a teammate.
+
+    Universal handle is `summary` — for `decision` kinds it maps to `choice`
+    on the existing `Decision` model, and for `open_question` kinds the body
+    can be supplied via `question` (with `summary` as a fallback). The
+    substrate translation lives in `finding_item_to_section_dict`.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    kind: Literal["pattern", "pitfall", "decision", "open_question"]
+    summary: str
+    id: str | None = None
+    evidence: str | None = None
+    why: str | None = None
+    rationale: str | None = None
+    supersedes: str | None = None
+    question: str | None = None
+    protected: bool = False
+    related: list[str] | None = None
+    lens: str | None = None
+
+
+class Finding(BaseModel):
+    """Wire format for `memory_findings_submit`.
+
+    See `skills/_shared/findings-schema.md` for the contract document. The
+    `agent` slug is validated against the same regex as `validate_agent_name`
+    so findings cannot escape the per-agent memory namespace.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    agent: str
+    section: SectionName
+    item: FindingItem
+
+    @field_validator("agent")
+    @classmethod
+    def _validate_agent_slug(cls, v: str) -> str:
+        validate_agent_name(v)  # raises ValueError on bad slug
+        return v
+
+    @model_validator(mode="after")
+    def _validate_kind_section_consistency(self) -> "Finding":
+        # Vocabulary consistency rule from findings-schema.md: the
+        # parent section and the inner kind must express the same
+        # vocabulary in two places, and they MUST agree.
+        expected = KIND_TO_SECTION[self.item.kind]
+        if expected != self.section:
+            raise ValueError(
+                f"Vocabulary mismatch: section={self.section!r} but "
+                f"item.kind={self.item.kind!r}; kind={self.item.kind!r} "
+                f"requires section={expected!r}"
+            )
+        return self
+
+
+# --- Helpers for translating FindingItem -> per-section item dict -----------
+
+# Slug pattern reused from ITEM_ID_PATTERN above. Used to derive a
+# deterministic id from a summary when the caller did not provide one.
+_ID_SLUG_NONALNUM = re.compile(r"[^a-z0-9]+")
+
+
+def _slugify_id(text: str, max_len: int = 32) -> str:
+    """Best-effort deterministic id from a free-form summary string.
+
+    Lowercases, replaces non-alnum runs with hyphens, strips leading/trailing
+    hyphens, and trims to `max_len`. Falls back to "item" if the input has no
+    alphanumeric characters at all (matches `ITEM_ID_PATTERN` requirement that
+    ids start with an alphanumeric).
+    """
+    lowered = text.lower()
+    slugged = _ID_SLUG_NONALNUM.sub("-", lowered).strip("-")
+    if not slugged:
+        return "item"
+    slugged = slugged[:max_len].rstrip("-")
+    if not slugged:
+        return "item"
+    # If after trimming we ended up starting with a hyphen-derived nothing,
+    # ensure first char is alnum (ITEM_ID_PATTERN requires it).
+    if not slugged[0].isalnum():
+        slugged = "item-" + slugged
+        slugged = slugged[:max_len].rstrip("-")
+    return slugged
+
+
+def finding_item_to_section_dict(item: FindingItem) -> dict:
+    """Convert a FindingItem to the dict shape expected by SECTION_MODELS[section].
+
+    The per-section item models (Pattern, Pitfall, Decision, OpenQuestion) do
+    not carry a `kind` field — that's redundant once the item is filed under
+    its section. This helper drops `kind`, picks only the optional fields
+    that belong to the target section, and remaps the universal `summary`
+    handle to the section-specific field name (`choice` for decisions,
+    `question` for open questions).
+
+    A deterministic id is generated from the summary if `item.id` is None.
+    """
+    item_id = item.id or _slugify_id(item.summary)
+
+    if item.kind == "pattern":
+        # Pattern: id, summary, evidence, related, lens, protected
+        return {
+            "id": item_id,
+            "summary": item.summary,
+            "evidence": item.evidence,
+            "related": item.related,
+            "lens": item.lens,
+            "protected": item.protected,
+        }
+    if item.kind == "pitfall":
+        # Pitfall: id, summary, why, related, lens, protected
+        return {
+            "id": item_id,
+            "summary": item.summary,
+            "why": item.why,
+            "related": item.related,
+            "lens": item.lens,
+            "protected": item.protected,
+        }
+    if item.kind == "decision":
+        # Decision: id, choice (<- summary), rationale, supersedes, related, lens, protected
+        return {
+            "id": item_id,
+            "choice": item.summary,
+            "rationale": item.rationale,
+            "supersedes": item.supersedes,
+            "related": item.related,
+            "lens": item.lens,
+            "protected": item.protected,
+        }
+    if item.kind == "open_question":
+        # OpenQuestion: id, question (<- question or summary fallback), related, lens, protected
+        return {
+            "id": item_id,
+            "question": item.question or item.summary,
+            "related": item.related,
+            "lens": item.lens,
+            "protected": item.protected,
+        }
+    # Should be unreachable thanks to the Literal on FindingItem.kind.
+    raise ValueError(f"Unknown FindingItem.kind: {item.kind!r}")

@@ -1,5 +1,5 @@
 ---
-name: marketing
+name: marketing-content-creator
 description: Use for multi-platform content strategy and production — editorial calendars, blog/long-form, video/podcast scripting, copywriting, and platform-adapted variants. Hand off when a task requires producing or planning content that has to work across channels. Don't use for growth experiments, SEO architecture, or social community tactics — hand those to growth-hacker, seo-specialist, or social-strategist.
 tools: Read, Write, Edit, WebSearch, WebFetch
 color: "#F43F5E"

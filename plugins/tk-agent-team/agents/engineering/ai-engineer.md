@@ -1,5 +1,5 @@
 ---
-name: engineering
+name: engineering-ai-engineer
 description: Use for applied ML and AI feature work — model selection, evaluation, prompt/RAG design, inference serving, embeddings, fine-tuning, and integrating model outputs into product flows. Hand off when a task involves shipping an ML or LLM-powered capability with measurable behavior. Don't use for data pipeline authoring, infrastructure, or product UI — hand those to data-engineer, devops, or developer/framework.
 tools: Read, Grep, Glob, Edit, Write, Bash, WebSearch, WebFetch
 color: "#1E3A8A"

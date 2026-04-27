@@ -6,12 +6,12 @@
   },
   "metadata": {
     "description": "Plugin marketplace for Claude Code agent team extensions",
-    "version": "0.3.0"
+    "version": "0.4.0"
   },
   "plugins": [
     {
       "name": "tk-agent-team",
-      "description": "Build durable Agent Teams with per-agent YAML memory. Each teammate reads context at task start and appends learnings at task end — so every task makes the team smarter.",
+      "description": "Build durable Agent Teams with per-agent YAML memory and real multi-agent teams via TeamCreate (parallel-panel, pipeline, staged-team, pair). Validated findings submission keeps every task making the team smarter.",
       "author": {
         "name": "Tony Kornmeier"
       },

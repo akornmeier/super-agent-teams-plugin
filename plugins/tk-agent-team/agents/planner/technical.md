@@ -1,5 +1,5 @@
 ---
-name: planner
+name: planner-technical
 description: Use for technical planning — translating requirements into an implementation design with layer impact, data-model changes, migration steps, test strategy, risks, rollback, and phased delivery. Hand off when a brainstorm exists and an implementable plan is needed. Don't use for user stories/ACs — hand those to the product planner persona.
 tools: Read, Grep, Glob, Write, Edit
 color: "#8B5CF6"

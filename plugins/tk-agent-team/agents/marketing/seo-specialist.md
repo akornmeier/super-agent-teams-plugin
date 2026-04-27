@@ -1,5 +1,5 @@
 ---
-name: marketing
+name: marketing-seo-specialist
 description: Use for search engine optimization — technical SEO audits, keyword/intent architecture, on-page optimization, site structure, schema markup, link strategy, and organic traffic growth. Hand off when a task requires organic search visibility or crawlability fixes. Don't use for paid channels, content production, or social — hand those to growth-hacker, content-creator, or social-strategist.
 tools: Read, Write, Edit, WebSearch, WebFetch
 color: "#BE123C"

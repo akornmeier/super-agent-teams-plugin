@@ -1,6 +1,7 @@
 ---
 name: ideate
 description: Use when the user asks to explore options, brainstorm directions, or propose approaches for a fuzzy problem ("what could we do about X", "propose", "spitball", "ideas for"). Produces a ranked set of 3–5 scored ideas in `docs/ideation/<YYYY-MM-DD>-<slug>.md` with tradeoffs and a recommendation. Reads/writes all agent memory at the skill layer via MCP tools before/after subagent dispatch.
+team_pattern: solo
 ---
 
 # ideate
@@ -14,17 +15,14 @@ You are the divergent-exploration pipeline. Your job is to take a fuzzy prompt, 
 
 ## Memory protocol (skill layer)
 
-**Before dispatching:** Call these MCP tools and include the results in each subagent's prompt under `## Memory context`:
-- `mcp__agent-substrate__memory_read_shared()` → include for all agents
-- `mcp__agent-substrate__memory_read(agent_name="researcher")` → include for researcher dispatch
-- `mcp__agent-substrate__memory_read(agent_name="planner")` → include for planner/product dispatch (and cross-read researcher context)
+<!-- @ref _shared/memory-protocol.md -->
 
-**After each subagent returns:** Parse the `## Memory findings` YAML block from the response. For each finding:
-1. Call `mcp__agent-substrate__memory_append(agent_name="<family>", section=finding.section, item=finding.item)`
-2. If the response includes `warning`, note the family for curation
-3. If the response includes `needs_curation: true`, dispatch `/memory-curate` for that family
+This skill follows the canonical memory protocol in `skills/_shared/memory-protocol.md`. See that file for the read-before / persist-after contract, the `_shared` write serialization rule, and the deprecated `## Memory findings` legacy path.
 
-**Important:** Subagents do NOT have MCP tool access. This skill (running in the parent session) is responsible for all memory reads before dispatch and all memory writes after each subagent returns. If a subagent returns no `## Memory findings` section, log a warning — the agent may need its prompt updated.
+### Memory deltas for this skill
+
+- Pre-dispatch reads at the skill layer: `_shared`, `researcher` (for the researcher dispatch), `planner` (for the planner/product dispatch — also cross-read with researcher context).
+- Subagents now call `memory_findings_submit` directly per `_shared/findings-schema.md`. The legacy `## Memory findings` YAML block is DEPRECATED but still parsed by the substrate in v0.4.
 
 ## Stages
 

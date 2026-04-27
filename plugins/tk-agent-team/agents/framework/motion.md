@@ -1,5 +1,5 @@
 ---
-name: framework
+name: framework-motion
 description: Use for animation and motion implementation — motion.dev, Framer Motion, animation choreography, gesture handling, scroll-linked effects, layout animations, and performance-conscious motion design. Hand off when a task requires interaction animation beyond CSS transitions or when performance under animation matters. Don't use for React/Vue component structure unrelated to motion — hand to react/vue personas. For static visual design, hand to design/ui-designer.
 tools: Read, Grep, Glob, Edit, Write, Bash, WebSearch, WebFetch
 color: "#0891B2"

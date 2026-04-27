@@ -1,0 +1,228 @@
+# Generated as data for the orchestrator. Edit this file to change routing;
+# `scripts/lint-agents.sh` and `tests/test_routing.py` validate this contract.
+#
+# Schema: see `agents/routing.yaml.schema.md`.
+# Family names refer to family directories under `agents/` (e.g. `reviewer`)
+# or standalone family agent files (e.g. `researcher.md`). Memory is per-family;
+# personas inside a family share that family's memory namespace.
+#
+# Precedence (per schema doc, "Stacking and precedence semantics"):
+#   1. First matching rule (file order) wins.
+#   2. Augmentations on the matched rule stack additively (set union with families).
+#   3. Overrides apply AFTER rule match; first matching override wins.
+#
+# Signal matching: case-insensitive substring by default. Single-word signals
+# that collide with common substrings (e.g. "PR" inside "profiles", "plan"
+# inside "plans/", "error" inside "ValueError") are wrapped in `re:/\bWORD\b/`
+# regex form per the schema's escape-hatch allowance.
+#
+# Augmentation triggers are category names. The orchestrator (and the test
+# helper in tests/test_routing.py) maps each category to the substrings that
+# fire it, per `agents/orchestrator.md` cross-cutting augmentation rules:
+#   - framework: react, vue, astro, motion.dev, framer motion, hooks,
+#                composition api, server component, islands
+#   - design:    design system, component library, design tokens,
+#                accessibility, aria, visual regression
+#   - engineering: deploy, container, observability, data pipeline,
+#                  embeddings, rag
+#   - marketing: blog, copy, seo, social, growth, campaign
+
+rules:
+  # bugfix — fix/broken/error/etc. → /debug pipeline team
+  - signals:
+      - "re:/\\bfix\\b/"
+      - "broken"
+      - "not working"
+      - "re:/\\bcan't\\b/"
+      - "re:/\\bwon't\\b/"
+      - "unable"
+      - "re:/\\berror\\b/"
+      - "re:/\\bbug\\b/"
+      - "re:/\\bcrash(es|ing|ed)?\\b/"
+      - "failing"
+      - "regression"
+    task_type: bugfix
+    skill: /debug
+    team_pattern: pipeline
+    families: [_shared, researcher, debugger, reviewer, developer]
+
+  # review — must precede feature/design/etc. so "review the design tokens PR"
+  # routes here, with design augmentation stacked on top.
+  - signals:
+      - "re:/\\breview(s|ing|ed)?\\b/"
+      - "re:/\\baudit(s|ing|ed)?\\b/"
+      - "re:/\\blint\\b/"
+      - "re:/\\bcritique\\b/"
+      - "re:/\\bPR\\b/"
+      - "pull request"
+    task_type: review
+    skill: /review
+    team_pattern: parallel-panel
+    families: [_shared, reviewer, developer]
+    augmentations:
+      - trigger: design
+        families: [design]
+      - trigger: framework
+        families: [framework]
+      - trigger: engineering
+        families: [engineering]
+
+  # planning — "plan", "ADR", "spec" — must precede feature so "plan a new
+  # feature" goes to /plan rather than /ship. Word-bounded to avoid catching
+  # "plans" inside "docs/plans/foo.md" paths.
+  - signals:
+      - "re:/\\bplan(ning)?\\b/"
+      - "design doc"
+      - "re:/\\barchitect(ure)?\\b/"
+      - "re:/\\bspec(s)?\\b/"
+      - "re:/\\bpropose\\b/"
+      - "re:/\\bADR\\b/"
+    task_type: planning
+    skill: /plan
+    team_pattern: solo
+    families: [_shared, planner, reviewer]
+
+  # design — "design system", "wireframe", etc. → /plan with design context.
+  - signals:
+      - "design system"
+      - "component library"
+      - "design tokens"
+      - "wireframe"
+      - "user flow"
+      - "UX audit"
+      - "usability"
+      - "re:/\\bbrand\\b/"
+      - "look and feel"
+    task_type: planning
+    skill: /plan
+    team_pattern: solo
+    families: [_shared, design, planner, reviewer]
+
+  # platform / engineering — "deploy", "CI/CD", "observability", etc.
+  # Routes through /work with engineering family pre-loaded.
+  - signals:
+      - "re:/\\bdeploy(s|ing|ed|ment)?\\b/"
+      - "re:/\\bCI\\/CD\\b/"
+      - "re:/\\bCI\\b/"
+      - "re:/\\bcontainer(s|ize|ized)?\\b/"
+      - "re:/\\bDocker\\b/"
+      - "re:/\\bKubernetes\\b/"
+      - "re:/\\bk8s\\b/"
+      - "re:/\\bSLO\\b/"
+      - "observability"
+      - "monitoring"
+      - "alerting"
+      - "data pipeline"
+      - "re:/\\bETL\\b/"
+      - "warehouse"
+      - "embeddings"
+      - "re:/\\bRAG\\b/"
+      - "LLM integration"
+      - "re:/\\bevals?\\b/"
+    task_type: feature
+    skill: /work
+    team_pattern: solo
+    families: [_shared, engineering, planner, developer, reviewer]
+
+  # marketing — blog/SEO/social/growth → /ideate first.
+  - signals:
+      - "blog post"
+      - "landing page copy"
+      - "re:/\\bSEO\\b/"
+      - "meta description"
+      - "growth experiment"
+      - "viral loop"
+      - "re:/\\bfunnel\\b/"
+      - "social campaign"
+      - "content calendar"
+      - "newsletter"
+    task_type: feature
+    skill: /ideate
+    team_pattern: solo
+    families: [_shared, marketing, planner]
+
+  # compound-cycle — explicit cradle-to-grave runs only.
+  - signals:
+      - "re:/\\bcompound\\b/"
+      - "end-to-end"
+      - "full cycle"
+      - "cradle to grave"
+    task_type: compound-cycle
+    skill: /compound
+    team_pattern: solo
+    families:
+      [
+        _shared,
+        planner,
+        tester,
+        researcher,
+        debugger,
+        docs-writer,
+        reviewer,
+        developer,
+        curator,
+        design,
+        framework,
+        engineering,
+        marketing,
+      ]
+
+  # refactor — "clean up", "refactor", "rename" → /plan then /work.
+  - signals:
+      - "clean up"
+      - "re:/\\brefactor(s|ing|ed)?\\b/"
+      - "re:/\\brestructure\\b/"
+      - "re:/\\brename\\b/"
+      - "re:/\\bextract\\b/"
+      - "re:/\\bsimplify\\b/"
+    task_type: refactor
+    skill: /plan
+    team_pattern: solo
+    families: [_shared, planner, developer, reviewer]
+
+  # feature — catch-all build/add/implement row; augmentations stack here.
+  # /work is the typical solo dispatch; the /work skill body switches to
+  # `pair` for full-stack mode internally.
+  - signals:
+      - "re:/\\badd\\b/"
+      - "re:/\\bimplement(s|ing|ed|ation)?\\b/"
+      - "re:/\\bbuild(s|ing)?\\b/"
+      - "new feature"
+      - "re:/\\bcreate(s|d)?\\b/"
+      - "support for"
+      - "re:/\\bship(s|ping|ped)?\\b/"
+    task_type: feature
+    skill: /ship
+    team_pattern: staged-team
+    families: [_shared, planner, developer, reviewer, tester]
+    augmentations:
+      - trigger: framework
+        families: [framework]
+      - trigger: design
+        families: [design]
+      - trigger: engineering
+        families: [engineering]
+      - trigger: marketing
+        families: [marketing]
+
+  # exploration — "what does", "explain", etc. → researcher direct (no skill).
+  - signals:
+      - "what does"
+      - "how does"
+      - "where is"
+      - "why does"
+      - "re:/\\bexplain(s|ing|ed)?\\b/"
+    task_type: exploration
+    skill: researcher
+    team_pattern: solo
+    families: [_shared, researcher]
+
+overrides:
+  # Stack-trace prompts force /debug regardless of surface signals.
+  - condition: stack_trace_present
+    force_skill: /debug
+    force_task_type: bugfix
+
+  # A docs/plans/*.md path in the prompt skips /ideate and /plan straight to /work.
+  - condition: plan_path_present
+    force_skill: /work

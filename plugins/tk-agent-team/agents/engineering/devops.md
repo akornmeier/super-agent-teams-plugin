@@ -1,5 +1,5 @@
 ---
-name: engineering
+name: engineering-devops
 description: Use for infrastructure-as-code, CI/CD pipelines, container/orchestration config, deployment automation, and environment management. Hand off when a task involves provisioning, building, shipping, or rolling back infrastructure. Don't use for application code, data pipelines, or incident response — hand those to developer, data-engineer, or sre.
 tools: Read, Grep, Glob, Edit, Write, Bash, WebSearch, WebFetch
 color: "#0EA5E9"

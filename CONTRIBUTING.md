@@ -182,6 +182,70 @@ All MCP server changes require passing tests. Agent `.md` file changes require p
 
 ---
 
+## Choosing a team pattern when writing a new skill
+
+Decision tree:
+
+```
+Q1: Does the work require >1 specialist?
+  → No  → `solo`
+  → Yes → Q2
+
+Q2: Do the specialists work concurrently on the same input, dedup findings?
+  → Yes → `parallel-panel`
+  → No  → Q3
+
+Q3: Do the specialists work in a strict order (researcher → debugger → tester)?
+  → Yes → `pipeline`
+  → No  → Q4
+
+Q4: Is this a 2-specialist contract negotiation (frontend ↔ backend)?
+  → Yes → `pair`
+  → No  → Q5
+
+Q5: Does the work have multiple stages where downstream stages CHECK upstream stages?
+  → Yes → `staged-team`  (default for review-then-test workflows; bias avoidance wins)
+  → No  → Q6
+
+Q6: Does the downstream stage genuinely need context that the artifact + diff cannot capture?
+  → Yes → `feature-team`  (rare; lint requires `### Why feature-team` justification)
+  → No  → escalate — your skill probably needs splitting
+```
+
+Examples:
+- "Generate a brainstorming list" → `solo`
+- "Three reviewers critique a PR" → `parallel-panel`
+- "Investigate a bug then fix it then test the fix" → `pipeline` or `staged-team` (the choice depends on whether the tester needs developer reasoning beyond the diff)
+- "Frontend and backend implement aligned features" → `pair`
+- "Take a plan to implemented + reviewed + tested" → `staged-team`
+
+---
+
+## Migrating a solo skill to a team-based skill
+
+Use `/review`'s migration as the worked example (commit history on `feat/true-agent-team` shows each stage):
+
+1. **Pick the team pattern** per the decision tree above.
+2. **Update SKILL.md frontmatter:** add `team_pattern: <chosen>`.
+3. **Replace inline memory-protocol prose with shared references:**
+   ```markdown
+   ## Memory protocol
+
+   <!-- @ref _shared/memory-protocol.md -->
+   <!-- @ref _shared/team-protocol.md -->
+
+   ### Memory deltas for this skill
+
+   - <skill-specific deltas only — preserve any conditional cross-reads>
+   ```
+4. **Rewrite the workflow as a team lifecycle:** `TeamCreate → spawn team-lead → spawn peers (with taskIds threaded into prompts) → coordinate → memory_findings_submit per peer → shutdown_request → TeamDelete`. Use `_shared/team-protocol.md` worked examples as templates.
+5. **Update the relevant agent files** to have direct MCP access — extend their `tools:` frontmatter with `mcp__agent-substrate__*`, `SendMessage`, `TaskList`, `TaskUpdate`. Replace their `## Memory protocol` section to call `memory_findings_submit` directly instead of emitting `## Memory findings` YAML.
+6. **Verify with lint and pytest:** `bash scripts/lint-agents.sh` PASS; if you wrote a structural smoke test fixture, ensure it passes.
+
+The /review migration commit (`feat(review): migrate /review to parallel-panel team prototype (task 5)`) is the canonical reference. The `/ship`, `/debug`, `/work` migrations follow the same shape with their respective patterns.
+
+---
+
 ## Pull request checklist
 
 - [ ] New/modified agents pass `./scripts/lint-agents.sh` with no errors
