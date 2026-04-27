@@ -1,6 +1,7 @@
 ---
 name: memory-curate
 description: Use when an agent's memory file has exceeded the soft or hard character limit and needs consolidation. Runs three stages in order — dedupe, score-and-drop, summarize — and stops as soon as the file is under the soft limit. Invoked by the orchestrator when `needs_curation: true` is returned from `mcp__agent-substrate__memory_write` or `mcp__agent-substrate__memory_append`, or proactively when a `warning` is returned near the soft limit.
+team_pattern: solo
 ---
 
 # memory-curate
@@ -14,17 +15,18 @@ You are curating an agent's YAML memory file. The storage layer is dumb; **you a
 
 ## Memory protocol (skill layer)
 
-This skill handles its own memory read/write cycle entirely at the skill layer. The curator subagent does NOT have MCP tool access.
+<!-- @ref _shared/memory-protocol.md -->
 
-**Before dispatching the curator subagent:**
-1. Call `mcp__agent-substrate__memory_read(agent_name=TARGET)` (or `mcp__agent-substrate__memory_read_shared()` if `agent_name` is `_shared`) to get the current YAML content
-2. Note the `char_count` and determine how much needs to be trimmed (target: under 8000 chars)
-3. Pass the full YAML content to the curator subagent under `## Current memory YAML` in its prompt
+This skill follows the canonical memory protocol in `skills/_shared/memory-protocol.md`. See that file for the read-before / persist-after contract, the `_shared` write serialization rule, and the deprecated `## Memory findings` legacy path.
 
-**After the curator subagent returns:**
-1. Extract the curated YAML from the `## Curated YAML` section of the curator's response
-2. Call `mcp__agent-substrate__memory_write(agent_name=TARGET, content=CURATED_YAML)` to save
-3. If the write still returns `needs_curation: true`, report failure to the orchestrator with a diagnostic — do not truncate
+### Memory deltas for this skill
+
+This skill is a **whole-file replacement** pipeline, not an append pipeline — it deviates from the canonical `memory_findings_submit` end-of-task contract intentionally.
+
+- **Skill-layer read of the target file**: call `mcp__agent-substrate__memory_read(agent_name=TARGET)` (or `mcp__agent-substrate__memory_read_shared()` if `TARGET` is `_shared`) to obtain the current YAML content and `char_count`. Pass the full YAML to the curator subagent under `## Current memory YAML`.
+- **Skill-layer write to replace the curated file**: after the curator returns, this skill calls `mcp__agent-substrate__memory_write(agent_name=TARGET, content=CURATED_YAML)` directly to overwrite the file with the curated YAML. This is the one place in the plugin where `memory_write` is called — every other skill uses `memory_append` or `memory_findings_submit`.
+- **Curator subagent has no MCP access by design**: the curator is a pure YAML-to-YAML transformer. It receives the input YAML in its prompt and returns the output YAML in `## Curated YAML`. It does not submit findings via `memory_findings_submit` — its output *is* the curated file, not findings about a file.
+- If the post-curation `memory_write` still returns `needs_curation: true`, report failure to the orchestrator with a diagnostic. Never truncate.
 
 ## The three stages (curator subagent instructions)
 

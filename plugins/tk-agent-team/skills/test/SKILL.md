@@ -1,6 +1,7 @@
 ---
 name: test
 description: Use when new code needs test coverage or when asked to "write tests", "cover this", or "add integration tests". Runs `tester/unit` and `tester/integration` in parallel against the implementation diff, writes test files, and produces a merged coverage-gap report. Reads/writes all agent memory at the skill layer via MCP tools before/after subagent dispatch.
+team_pattern: solo
 ---
 
 # test
@@ -14,18 +15,15 @@ You are the test-authoring pipeline. You run unit and integration coverage as pa
 
 ## Memory protocol (skill layer)
 
-**Before dispatching:** Call these MCP tools and include the results in each subagent's prompt under `## Memory context`:
-- `mcp__agent-substrate__memory_read_shared()` → include for all agents
-- `mcp__agent-substrate__memory_read(agent_name="tester")` → include for both tester dispatches
-- `mcp__agent-substrate__memory_read(agent_name="developer")` → include for both tester dispatches (cross-read for implementation context)
-- `mcp__agent-substrate__memory_read(agent_name="reviewer")` → include for both tester dispatches (cross-read for known issues)
+<!-- @ref _shared/memory-protocol.md -->
 
-**After each subagent returns:** Parse the `## Memory findings` YAML block from the response. For each finding:
-1. Call `mcp__agent-substrate__memory_append(agent_name="tester", section=finding.section, item=finding.item)`
-2. If the response includes `warning`, note the family for curation
-3. If the response includes `needs_curation: true`, dispatch `/memory-curate` for that family
+This skill follows the canonical memory protocol in `skills/_shared/memory-protocol.md`. See that file for the read-before / persist-after contract, the `_shared` write serialization rule, and the deprecated `## Memory findings` legacy path.
 
-**Important:** Subagents do NOT have MCP tool access. This skill (running in the parent session) is responsible for all memory reads before dispatch and all memory writes after each subagent returns. If a subagent returns no `## Memory findings` section, log a warning — the agent may need its prompt updated.
+### Memory deltas for this skill
+
+- Pre-dispatch reads at the skill layer: `_shared`, `tester` (for both tester dispatches), `developer` (cross-read for implementation context), `reviewer` (cross-read for known issues).
+- All findings from both testers append under `agent_name="tester"` regardless of which dispatch produced them.
+- Subagents now call `memory_findings_submit` directly per `_shared/findings-schema.md`. The legacy `## Memory findings` YAML block is DEPRECATED but still parsed by the substrate in v0.4.
 
 ## Stages
 

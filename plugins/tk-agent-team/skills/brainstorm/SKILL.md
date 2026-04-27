@@ -1,6 +1,7 @@
 ---
 name: brainstorm
 description: Use when the user has selected an idea from an ideation doc (or names a concrete feature directly) and needs it expanded into user stories and acceptance criteria. Produces `docs/brainstorms/<YYYY-MM-DD>-<slug>-requirements.md` with Given/When/Then criteria, out-of-scope, and open questions. Reads/writes all agent memory at the skill layer via MCP tools before/after subagent dispatch.
+team_pattern: solo
 ---
 
 # brainstorm
@@ -14,16 +15,14 @@ You convert a single chosen idea into a requirements doc a planner can design ag
 
 ## Memory protocol (skill layer)
 
-**Before dispatching:** Call these MCP tools and include the results in each subagent's prompt under `## Memory context`:
-- `mcp__agent-substrate__memory_read_shared()` → include for all agents
-- `mcp__agent-substrate__memory_read(agent_name="planner")` → include for planner/product dispatch
+<!-- @ref _shared/memory-protocol.md -->
 
-**After each subagent returns:** Parse the `## Memory findings` YAML block from the response. For each finding:
-1. Call `mcp__agent-substrate__memory_append(agent_name="planner", section=finding.section, item=finding.item)`
-2. If the response includes `warning`, note the family for curation
-3. If the response includes `needs_curation: true`, dispatch `/memory-curate` for that family
+This skill follows the canonical memory protocol in `skills/_shared/memory-protocol.md`. See that file for the read-before / persist-after contract, the `_shared` write serialization rule, and the deprecated `## Memory findings` legacy path.
 
-**Important:** Subagents do NOT have MCP tool access. This skill (running in the parent session) is responsible for all memory reads before dispatch and all memory writes after each subagent returns. If a subagent returns no `## Memory findings` section, log a warning — the agent may need its prompt updated.
+### Memory deltas for this skill
+
+- Pre-dispatch reads at the skill layer: `_shared`, `planner` (for the planner/product dispatch).
+- Subagents now call `memory_findings_submit` directly per `_shared/findings-schema.md`. The legacy `## Memory findings` YAML block is DEPRECATED but still parsed by the substrate in v0.4.
 
 ## Stages
 

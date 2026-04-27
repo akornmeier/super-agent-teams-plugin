@@ -1,6 +1,7 @@
 ---
 name: compound
 description: Use at the end of a full cycle (after `/ship` or `/debug`) to harvest the run into durable signal — a solution doc in `docs/solutions/<category>/` plus curated memory files. Dispatches `docs-writer` then `/memory-curate` for families near the soft limit. Reads/writes all agent memory at the skill layer via MCP tools before/after subagent dispatch.
+team_pattern: solo
 ---
 
 # compound
@@ -14,19 +15,15 @@ You are the durability pipeline. You take the transient outputs of a cycle (code
 
 ## Memory protocol (skill layer)
 
-**Before dispatching docs-writer:** Call these MCP tools and include the results in the subagent's prompt under `## Memory context`:
-- `mcp__agent-substrate__memory_read_shared()` → include for all agents
-- `mcp__agent-substrate__memory_read(agent_name="docs-writer")` → include for docs-writer dispatch
-- Read all family memories touched during the cycle (typically `planner`, `developer`, `reviewer`, `tester`, `debugger`, `researcher`; also `design`, `framework`, `engineering`, `marketing` whenever those families were dispatched or cross-read during the cycle) via `mcp__agent-substrate__memory_read(agent_name="<family>")` for each — include all as cross-read context for docs-writer
+<!-- @ref _shared/memory-protocol.md -->
 
-**After docs-writer returns:** Parse the `## Memory findings` YAML block from the response. For each finding:
-1. Call `mcp__agent-substrate__memory_append(agent_name="docs-writer", section=finding.section, item=finding.item)`
-2. If the response includes `warning`, note the family for curation
-3. If the response includes `needs_curation: true`, dispatch `/memory-curate` for that family
+This skill follows the canonical memory protocol in `skills/_shared/memory-protocol.md`. See that file for the read-before / persist-after contract, the `_shared` write serialization rule, and the deprecated `## Memory findings` legacy path.
 
-**For curation (stage 2):** This skill dispatches `/memory-curate` which handles its own memory read/write cycle. See the `/memory-curate` skill's memory protocol for details.
+### Memory deltas for this skill
 
-**Important:** Subagents do NOT have MCP tool access. This skill (running in the parent session) is responsible for all memory reads before dispatch and all memory writes after each subagent returns. If a subagent returns no `## Memory findings` section, log a warning — the agent may need its prompt updated.
+- Pre-dispatch reads at the skill layer (for the docs-writer dispatch): `_shared`, `docs-writer`, plus **every family memory touched during the cycle**. Typically `planner`, `developer`, `reviewer`, `tester`, `debugger`, `researcher`; also `design`, `framework`, `engineering`, `marketing` whenever those families were dispatched or cross-read during the cycle. All are passed as cross-read context for docs-writer.
+- Stage 2 delegates to `/memory-curate`, which handles its own memory read/write cycle. Do not duplicate curation policy here.
+- Subagents now call `memory_findings_submit` directly per `_shared/findings-schema.md`. The legacy `## Memory findings` YAML block is DEPRECATED but still parsed by the substrate in v0.4.
 
 ## Stages
 
