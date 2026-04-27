@@ -12,66 +12,64 @@ Five tools:
 - `memory_read_shared()` — load the project-wide shared memory file
 - `memory_append_shared(section, item)` — add one item to the shared file
 
-Every write is schema-validated, character-count enforced (soft 6000, hard 8000), atomic, and protected by a file lock.
+Every write is schema-validated, character-count enforced (soft 8000, hard 10000), atomic, and protected by a file lock.
 
 ## Why it exists
 
-Agent Teams in Claude Code spawn each teammate as a fresh Claude Code session with no memory of previous runs. This MCP server gives each teammate a durable expertise file it can read at the start of a task and update at the end. Files live on disk as YAML so they're git-trackable, human-editable, and amenable to review.
+Agent Teams in Claude Code spawn each teammate as a fresh subagent with no memory of previous runs. This MCP server provides durable per-agent expertise files that persist across sessions. Files live on disk as YAML so they're git-trackable, human-editable, and amenable to review.
 
-The hard size cap is the load-bearing feature: it forces agents to consolidate rather than hoard, and it routes curation through a separate dispatch (the orchestrator) instead of letting an agent self-edit in the same turn it just used the memory.
+**Important architecture note:** Subagents dispatched via the Agent tool do NOT have access to MCP server tools — only the parent session does. The skill layer (running in the parent session) is responsible for all memory I/O: it calls `memory_read` before dispatching a subagent, passes the content in the prompt, then parses structured findings from the subagent's response and calls `memory_append` to persist them.
+
+The hard size cap is the load-bearing feature: it forces consolidation rather than hoarding, and it routes curation through a separate dispatch (the `memory-curate` skill) instead of letting an agent self-edit.
 
 ## Install
 
 ```bash
 cd mcp-servers/agent-substrate
-pip install -e .
-```
-
-Or with `uv`:
-
-```bash
-uv pip install -e .
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
 ```
 
 ## Wire into Claude Code
 
-Add to your project's `.claude/settings.json`:
-
-```json
-{
-  "experimental": {
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
-  },
-  "mcpServers": {
-    "agent-substrate": {
-      "type": "stdio",
-      "command": "python",
-      "args": ["-m", "agent_substrate"]
-    }
-  }
-}
-```
-
-If you want a custom location for memory files (default is `./.agent-memory` relative to wherever Claude Code is launched):
+The plugin's `.mcp.json` handles this automatically. It uses [`uv run`](https://docs.astral.sh/uv/) so the server starts without manual venv management — `uv` resolves the environment from the project's `pyproject.toml` on demand. Requires `uv` to be installed ([install guide](https://docs.astral.sh/uv/)).
 
 ```json
 {
   "mcpServers": {
     "agent-substrate": {
       "type": "stdio",
-      "command": "python",
-      "args": ["-m", "agent_substrate"],
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "${CLAUDE_PLUGIN_ROOT}/mcp-servers/agent-substrate",
+        "agent-substrate"
+      ],
       "env": {
-        "AGENT_SUBSTRATE_BASE_DIR": "/absolute/path/to/.agent-memory"
+        "AGENT_SUBSTRATE_BASE_DIR": "${CLAUDE_PROJECT_DIR}/.agent-memory"
       }
     }
   }
 }
 ```
 
-The tool names exposed to agents will be `mcp__agent-substrate__memory_read`, `mcp__agent-substrate__memory_write`, etc. Reference these in each agent's `tools` allowlist.
+The server defaults to `.agent-memory/` relative to the working directory (which Claude Code sets to the project root). To use a custom location, set the `AGENT_SUBSTRATE_BASE_DIR` environment variable to an absolute path.
 
-> **Note on `experimental` settings key:** I'm ~70% confident on the exact JSON shape for the experimental flag. The official docs consistently show it as the env var form `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`. If putting it in `settings.json` doesn't take effect, set it as an environment variable in your shell before launching Claude Code: `export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`.
+The tool names exposed to the parent session are `mcp__agent-substrate__memory_read`, `mcp__agent-substrate__memory_write`, etc. Only the orchestrator agent and the skill layer call these directly — subagents receive memory context via their prompt and return findings in a structured format.
+
+Verify the server is connected by running `/mcp` in Claude Code — you should see `plugin:tk-agent-team:agent-substrate` with a green checkmark.
+
+To enable Agent Teams, set this in `~/.claude/settings.json` under `"env"`:
+
+```json
+{
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  }
+}
+```
 
 ## Memory file schema
 
@@ -104,10 +102,10 @@ open_questions:
 
 ## Character limits
 
-- **Soft limit: 6000 characters** — writes succeed but return a `warning` field.
-- **Hard limit: 8000 characters** — writes are rejected with `needs_curation: true`.
+- **Soft limit: 8000 characters** — writes succeed but return a `warning` field.
+- **Hard limit: 10000 characters** — writes are rejected with `needs_curation: true`.
 
-Measured in Unicode code points (Python `len()` on a `str`), not bytes or tokens. 8000 characters is roughly 2000–2500 tokens depending on content density.
+Measured in Unicode code points (Python `len()` on a `str`), not bytes or tokens. 10000 characters is roughly 2500–3300 tokens depending on content density.
 
 When an agent receives `needs_curation: true`, it should **not** retry by truncating the content itself. It should instead message the orchestrator to dispatch the curator. The curation skill is the only place where deletion logic lives.
 
@@ -146,7 +144,7 @@ Run this in two terminals at once. Final file should have ~200 distinct items, n
 ## Run the tests
 
 ```bash
-pip install -e ".[dev]"
+source .venv/bin/activate
 pytest
 ```
 

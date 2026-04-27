@@ -32,8 +32,8 @@ from .schema import (
 
 # Character limits, measured in unicode code points (Python str length).
 # Roughly correlates to tokens at ~3-4 chars/token for english + YAML.
-SOFT_LIMIT = 6000
-HARD_LIMIT = 8000
+SOFT_LIMIT = 8000
+HARD_LIMIT = 10000
 
 SHARED_FILENAME = "_shared.yaml"
 LOCK_TIMEOUT_SECONDS = 10

@@ -1,5 +1,47 @@
-logs/
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
 
-# Claude local/machine-specific files
-.claude/data/
-.claude/settings.local.json
+# Editors / IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Backups / temp
+*.bak
+*.tmp
+*.orig
+
+# Logs
+logs/
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+
+# Node (in case any tooling lands here)
+node_modules/
+
+# Claude local/machine-specific state (any depth)
+**/.claude/data/
+**/.claude/settings.local.json
+**/.claude/logs/
+
+# Local agent memory scratch
+.agent-memory/
