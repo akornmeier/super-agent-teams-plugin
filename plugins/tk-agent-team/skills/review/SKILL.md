@@ -12,6 +12,7 @@ You are the multi-lens critique pipeline. One reviewer is a single perspective; 
 
 - **User prompt** (verbatim) under `## Original prompt` in the brief file. May contain a mode hint: `mode: report-only` (default), `mode: autofix`, `mode: interactive`.
 - **Input artifact path** — either a `docs/work/<slug>-work.md` summary, a diff file, or `none` (in which case the team reviews the current working-tree diff via `git diff`).
+- **Single file path** (e.g., `tests/fixtures/review-dedup/auth.py`) — the skill computes the diff via `git diff HEAD~1 -- <path>`. If the file is untracked (new), the entire file is treated as additions. Useful for `/review <fixture-or-test-file>` invocations.
 
 ## Memory protocol
 
@@ -38,8 +39,8 @@ Each teammate's prompt body must instruct them to:
 
 1. Call `mcp__agent-substrate__memory_read_shared()` and `mcp__agent-substrate__memory_read(agent_name="reviewer")` directly. (Cross-reads to `developer`, `framework`, etc., per the deltas section below.)
 2. Review the diff scope through their lens (architecture / correctness / security).
-3. **Peer dedup loop:** Before finalizing a finding, call `TaskList()` to see what peers are working on. If a finding overlaps a peer's scope (e.g. correctness finds a hard-coded credential that security would also flag), `SendMessage({to: "reviewer-<peer>", message: {type: "potential_overlap", finding_summary: "<one-line>"}})` to negotiate. Whoever has the more specific lens keeps it; the other defers. Document this peer-DM in the team scratch via `team_memory_append({team_name, section: "decisions", item: {...}})`.
-4. Submit findings via `mcp__agent-substrate__memory_findings_submit({agent: "reviewer-<lens>", findings: [...]})` per the schema in `_shared/findings-schema.md`. All three submit at the family level (`agent: "reviewer"` for the persisted finding) so the consolidated `reviewer.yaml` accumulates them.
+3. **Peer dedup loop:** Before finalizing a finding, call `TaskList()` to see what peers are working on. If a finding overlaps a peer's scope (e.g. correctness finds a hard-coded credential that security would also flag), `SendMessage({to: "reviewer-<peer>", message: {type: "potential_overlap", finding_summary: "<one-line>"}})` to negotiate. Whoever has the more specific lens keeps it; the other defers. Document this peer-DM in the team scratch via `team_memory_append({team_name, section: "dedup_decisions", item: {...}})`. The `dedup_decisions` section name is canonical per the team-memory section taxonomy in `_shared/team-protocol.md#team-memory-section-taxonomy` (the `decisions` section is reserved for durable team-coordination outcomes, not peer-DM dedup outcomes).
+4. Submit findings via `mcp__agent-substrate__memory_findings_submit({agent: "reviewer-<lens>", findings: [...]})` per the schema in `_shared/findings-schema.md`. All three submit at the family level (`agent: "reviewer"` for the persisted finding) so the consolidated `reviewer.yaml` accumulates them. When you call `mcp__agent-substrate__memory_findings_submit`, populate `item.lens: "reviewer-<your-lens>"` (e.g., `lens: "reviewer-architecture"`) so post-hoc audit can recover which lens flagged what. The substrate has supported `lens` since v0.4 task 20.
 5. Call `TaskUpdate({taskId: <my-task>, status: "completed"})` when done.
 
 ### Stage 3 — consolidation and shutdown
