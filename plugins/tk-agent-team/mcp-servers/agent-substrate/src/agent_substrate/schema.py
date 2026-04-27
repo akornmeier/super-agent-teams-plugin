@@ -82,6 +82,7 @@ class Pattern(_ItemBase):
 
     summary: str
     evidence: str | None = None
+    related: list[str] | None = None
     protected: bool = False
 
 
@@ -90,6 +91,7 @@ class Pitfall(_ItemBase):
 
     summary: str
     why: str | None = None
+    related: list[str] | None = None
     protected: bool = False
 
 
@@ -99,6 +101,7 @@ class Decision(_ItemBase):
     choice: str
     rationale: str | None = None
     supersedes: str | None = None
+    related: list[str] | None = None
     protected: bool = False
 
 
@@ -106,6 +109,7 @@ class OpenQuestion(_ItemBase):
     """Something the agent is uncertain about."""
 
     question: str
+    related: list[str] | None = None
     protected: bool = False
 
 
@@ -282,35 +286,39 @@ def finding_item_to_section_dict(item: FindingItem) -> dict:
     item_id = item.id or _slugify_id(item.summary)
 
     if item.kind == "pattern":
-        # Pattern: id, summary, evidence, protected
+        # Pattern: id, summary, evidence, related, protected
         return {
             "id": item_id,
             "summary": item.summary,
             "evidence": item.evidence,
+            "related": item.related,
             "protected": item.protected,
         }
     if item.kind == "pitfall":
-        # Pitfall: id, summary, why, protected
+        # Pitfall: id, summary, why, related, protected
         return {
             "id": item_id,
             "summary": item.summary,
             "why": item.why,
+            "related": item.related,
             "protected": item.protected,
         }
     if item.kind == "decision":
-        # Decision: id, choice (<- summary), rationale, supersedes, protected
+        # Decision: id, choice (<- summary), rationale, supersedes, related, protected
         return {
             "id": item_id,
             "choice": item.summary,
             "rationale": item.rationale,
             "supersedes": item.supersedes,
+            "related": item.related,
             "protected": item.protected,
         }
     if item.kind == "open_question":
-        # OpenQuestion: id, question (<- question or summary fallback), protected
+        # OpenQuestion: id, question (<- question or summary fallback), related, protected
         return {
             "id": item_id,
             "question": item.question or item.summary,
+            "related": item.related,
             "protected": item.protected,
         }
     # Should be unreachable thanks to the Literal on FindingItem.kind.

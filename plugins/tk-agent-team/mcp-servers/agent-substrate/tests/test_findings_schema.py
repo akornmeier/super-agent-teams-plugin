@@ -191,6 +191,7 @@ class TestTranslation:
             "id": "virt-tables",
             "summary": "virt large tables",
             "evidence": "dashboard render +80%",
+            "related": None,
             "protected": False,
         }
 
@@ -207,6 +208,7 @@ class TestTranslation:
             "id": "aria-live-overuse",
             "summary": "don't use aria-live=assertive",
             "why": "interrupts screen reader flow",
+            "related": None,
             "protected": True,
         }
 
@@ -307,6 +309,12 @@ _ROUND_TRIP_FIXTURES = [
         id="pattern-2",
     ),
     pytest.param(
+        "pattern", "patterns", "developer-frontend",
+        "use react-virtual for tables > 500 rows",
+        {"id": "virt-tables-rel", "related": ["item-a", "item-b"]},
+        id="pattern-related",
+    ),
+    pytest.param(
         "pitfall", "pitfalls", "reviewer-security",
         "hard-coded credentials in auth.py",
         {"id": "hard-coded-creds", "evidence": "auth.py:42", "why": "rotates with deploys"},
@@ -317,6 +325,12 @@ _ROUND_TRIP_FIXTURES = [
         "off-by-one on retry counter",
         {"id": "retry-off-by-one"},
         id="pitfall-2",
+    ),
+    pytest.param(
+        "pitfall", "pitfalls", "reviewer-security",
+        "secrets in logs",
+        {"id": "secrets-in-logs", "related": ["creds-via-env"]},
+        id="pitfall-related",
     ),
     pytest.param(
         "decision", "decisions", "reviewer-security",
@@ -331,6 +345,12 @@ _ROUND_TRIP_FIXTURES = [
         id="decision-2",
     ),
     pytest.param(
+        "decision", "decisions", "developer-backend",
+        "use postgres for new services",
+        {"id": "postgres-default-rel", "related": ["secrets-in-logs", "creds-via-env"]},
+        id="decision-related",
+    ),
+    pytest.param(
         "open_question", "open_questions", "researcher",
         "rsc-strategy",
         {"id": "rsc-strategy", "question": "should we use React Server Components?"},
@@ -341,6 +361,12 @@ _ROUND_TRIP_FIXTURES = [
         "edge-cache strategy",
         {"id": "edge-cache"},  # falls back to summary for question
         id="open-question-2",
+    ),
+    pytest.param(
+        "open_question", "open_questions", "researcher",
+        "ssr-strategy",
+        {"id": "ssr-strategy", "related": ["rsc-strategy"]},
+        id="open-question-related",
     ),
 ]
 
@@ -387,6 +413,10 @@ def test_findings_round_trip(storage, kind, section, agent, summary, extras):
     }[kind]
     assert section == expected_section
 
+    # `related` must survive byte-for-byte (or be None on both sides).
+    expected_related = extras.get("related")
+    assert stored.get("related") == expected_related
+
 
 def test_findings_round_trip_full_batch(storage):
     """Submit the full batch in one call, then read each agent back.
@@ -423,3 +453,128 @@ def test_findings_round_trip_full_batch(storage):
         storage.read("researcher").parsed["open_questions"][0]["question"]
         == "q1 body"
     )
+
+
+# ============================================================================
+# Related-field unit tests on the per-section models
+# ============================================================================
+
+
+class TestRelatedFieldOnSectionModels:
+    """`related: list[str] | None` was added to all four per-section models in
+    Task 19. These tests pin the contract: list[str] accepted, None is the
+    default, non-list values are rejected.
+    """
+
+    def test_pattern_constructs_with_related(self):
+        from agent_substrate.schema import Pattern
+
+        p = Pattern(id="x", summary="y", related=["a", "b"])
+        assert p.related == ["a", "b"]
+
+    def test_pitfall_constructs_with_related(self):
+        from agent_substrate.schema import Pitfall
+
+        p = Pitfall(id="x", summary="y", related=["a"])
+        assert p.related == ["a"]
+
+    def test_decision_constructs_with_related(self):
+        from agent_substrate.schema import Decision
+
+        d = Decision(id="x", choice="y", related=["a", "b"])
+        assert d.related == ["a", "b"]
+
+    def test_open_question_constructs_with_related(self):
+        from agent_substrate.schema import OpenQuestion
+
+        q = OpenQuestion(id="x", question="y?", related=["a"])
+        assert q.related == ["a"]
+
+    def test_pattern_model_dump_round_trips_through_yaml(self):
+        import yaml
+
+        from agent_substrate.schema import Pattern
+
+        p = Pattern(id="x", summary="y", related=["a", "b"])
+        dumped = yaml.safe_dump(p.model_dump(exclude_none=False), sort_keys=False)
+        reloaded = yaml.safe_load(dumped)
+        p2 = Pattern.model_validate(reloaded)
+        assert p2 == p
+        assert p2.related == ["a", "b"]
+
+    def test_pattern_related_not_a_list_rejected(self):
+        from agent_substrate.schema import Pattern
+
+        with pytest.raises(ValidationError):
+            Pattern(id="x", summary="y", related="not-a-list")
+
+    def test_pitfall_related_not_a_list_rejected(self):
+        from agent_substrate.schema import Pitfall
+
+        with pytest.raises(ValidationError):
+            Pitfall(id="x", summary="y", related="not-a-list")
+
+    def test_decision_related_not_a_list_rejected(self):
+        from agent_substrate.schema import Decision
+
+        with pytest.raises(ValidationError):
+            Decision(id="x", choice="y", related="not-a-list")
+
+    def test_open_question_related_not_a_list_rejected(self):
+        from agent_substrate.schema import OpenQuestion
+
+        with pytest.raises(ValidationError):
+            OpenQuestion(id="x", question="y?", related="not-a-list")
+
+    def test_related_defaults_to_none(self):
+        from agent_substrate.schema import (
+            Decision,
+            OpenQuestion,
+            Pattern,
+            Pitfall,
+        )
+
+        assert Pattern(id="x", summary="y").related is None
+        assert Pitfall(id="x", summary="y").related is None
+        assert Decision(id="x", choice="y").related is None
+        assert OpenQuestion(id="x", question="y?").related is None
+
+
+def test_yaml_serializes_none_related_as_null(storage, tmp_path):
+    """Verify on-disk YAML form: `related: null` (not omitted) when None.
+
+    `_serialize` calls `model_dump(exclude_none=False)`, so None should land
+    in the file as an explicit `null`. This guards against future drift
+    toward `exclude_none=True` which would silently drop the field.
+    """
+    finding = {
+        "agent": "developer-frontend",
+        "section": "patterns",
+        "item": {"kind": "pattern", "summary": "no related set", "id": "p-none"},
+    }
+    _submit_via_helper(storage, [finding])
+
+    yaml_path = storage.base_dir / "developer-frontend.yaml"
+    raw = yaml_path.read_text(encoding="utf-8")
+    # Serialized form must contain an explicit null for `related`.
+    assert "related: null" in raw, (
+        f"expected `related: null` in serialized YAML, got:\n{raw}"
+    )
+
+
+def test_yaml_serializes_related_list(storage):
+    """List form should serialize as a YAML sequence and round-trip."""
+    finding = {
+        "agent": "developer-frontend",
+        "section": "patterns",
+        "item": {
+            "kind": "pattern",
+            "summary": "with related",
+            "id": "p-rel",
+            "related": ["item-a", "item-b"],
+        },
+    }
+    _submit_via_helper(storage, [finding])
+
+    parsed = storage.read("developer-frontend").parsed
+    assert parsed["patterns"][0]["related"] == ["item-a", "item-b"]
