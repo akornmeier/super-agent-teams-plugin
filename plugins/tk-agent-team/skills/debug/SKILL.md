@@ -75,7 +75,7 @@ After tester completes:
    - `## Regression test` — from tester.
    - `## Related patterns` and `## Applies to` — team-lead synthesizes.
    The artifact is one file with attributed sections, not five separate files.
-3. Team-lead records any project-level decisions that emerged to `_shared` via `memory_findings_submit({agent: "_shared", ...})` (team-lead is the only writer per `_shared` write serialization).
+3. Team-lead records any project-level decisions that emerged to `_shared` via `memory_append_shared({section: "decisions", item: {...}})` (team-lead is the only writer per `_shared` write serialization; the substrate slug regex disallows `agent: "_shared"`).
 
 ### Stage 4 — teardown
 

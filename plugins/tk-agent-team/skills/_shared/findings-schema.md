@@ -54,7 +54,7 @@ Optional fields (all default `None` unless noted):
 - `question: str | None` — body of an `open_question`.
 - `protected: bool = False` — if true, curator cannot consolidate this away.
 - `related: list[str] | None` — ids of related findings.
-- `lens: str | None` — running-teammate slug that produced the finding (e.g., `"reviewer-architecture"`, `"reviewer-security"`). Optional; populated by `parallel-panel` skills so post-hoc audit can recover which lens flagged what. When omitted, treat the family-level `agent` slug as the producer. **Implementation note:** this field is additive to `FindingItem` in `schema.py` and must be passed through `finding_item_to_section_dict`. Substrate change is a follow-up to task 7; until merged, callers may include `lens` in submissions but the substrate will reject under `extra="forbid"` — coordinate the substrate roll-out before SKILL.md authors start sending `lens`.
+- `lens: str | None` — running-teammate slug that produced the finding (e.g., `"reviewer-architecture"`, `"reviewer-security"`). Optional; populated by `parallel-panel` skills so post-hoc audit can recover which lens flagged what. When omitted, treat the family-level `agent` slug as the producer. **Supported as of v0.4:** this field is part of `FindingItem` in `schema.py` and is passed through `finding_item_to_section_dict`; SKILL.md authors should populate it on submissions from running teammates whose name differs from the family slug.
 
 Pydantic config: `model_config = {"extra": "forbid"}`.
 
@@ -134,4 +134,4 @@ These are rejected by the schema:
 - `section="patterns"` with `kind="pitfall"` — vocabulary mismatch.
 - `agent="../etc/passwd"` — fails slug regex.
 - Extra field `severity: "high"` — `extra="forbid"`. Encode severity in `summary` or `evidence` instead, or propose a schema extension. (Severity vocabulary is canonicalized by the dedup-arbiter per `_shared/team-protocol.md#severity-vocabulary-canonical-lattice`.)
-- `lens` field present **before** the substrate adds it — until the additive substrate change lands, `lens` is rejected by `extra="forbid"`. Post-merge, `lens` becomes a valid optional field on `FindingItem`.
+- Misspelled `lens` (e.g., `lense`, `lenz`) — `extra="forbid"` rejects it. The canonical `lens` field is supported as of v0.4.

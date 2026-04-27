@@ -43,7 +43,7 @@ Also parse `## Implementation phases` — default to executing phase 1 unless th
 - Both modes: each developer reads `_shared` + `developer` (their own family memory) directly via MCP at task start.
 - Cross-reads stay at the teammate layer per the canonical matrix: developers read `reviewer` for ADR/pattern awareness; `developer-frontend` reads `design` when the plan touches UI/a11y; `developer-backend` reads `engineering` when the plan touches deploy/infra/data/LLM; either reads `framework` when React/Vue/Astro/motion.dev signals appear.
 - Pair mode: a lightweight `team-lead` is also spawned to own the shared TaskList and serialize `_shared` writes; each developer DMs the other on contract questions but neither writes to `_shared`.
-- Findings submitted via `mcp__agent-substrate__memory_findings_submit({agent: "developer", ...})` per family. Use optional `item.lens` to record `developer-frontend` vs `developer-backend` once the substrate task-20 additive change lands; until then omit `lens` (would be rejected under `extra="forbid"`).
+- Findings submitted via `mcp__agent-substrate__memory_findings_submit({agent: "developer", ...})` per family. Each finding MUST set `item.lens: "developer-frontend"` or `item.lens: "developer-backend"` to record the running-teammate identity (supported as of v0.4 — see `_shared/findings-schema.md`).
 
 ## Workflow
 

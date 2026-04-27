@@ -45,7 +45,7 @@ This skill follows the canonical memory and team protocols. Teammates spawned by
    - Frontend signal → `Agent({name: "developer-frontend", ...})` + matching `TaskCreate`.
    - Both → both spawn (they DM each other for contract negotiation, mirroring the `/work` pair pattern).
 2. Each developer teammate's prompt MUST include a `## Team coordination context` heading carrying their own `taskId` and any peer `taskId`s, per `_shared/team-protocol.md#taskid-threading-load-bearing-for-spawning-skills`.
-3. Developers do their work directly: read family memory, edit code, run tests, submit findings via `memory_findings_submit({agent: "developer", ...})` (family-level slug; running-teammate-name `developer-backend`/`developer-frontend` may be captured optionally in `item.lens` once substrate task 20 lands — see `_shared/findings-schema.md`).
+3. Developers do their work directly: read family memory, edit code, run tests, submit findings via `memory_findings_submit({agent: "developer", ...})` (family-level slug). Each finding MUST set `item.lens: "developer-backend"` (or `"developer-frontend"`) so post-hoc audit can recover which running teammate produced it — see `_shared/findings-schema.md`.
 4. When the work task is `completed`, each developer MUST call `memory_findings_submit` BEFORE acknowledging shutdown.
 5. Team-lead sends `SendMessage({to: "developer-<lens>", message: {type: "shutdown_request"}})` to each developer, waits for idle (≤60s grace per `_shared/team-protocol.md#shutdown-invariants`), then records `team_memory_append({team_name: "ship-<slug>", section: "handoffs", item: {...}})` documenting "stage 1 → stage 2 transition; work artifact at `docs/work/<slug>-work.md`".
 
@@ -58,7 +58,7 @@ This skill follows the canonical memory and team protocols. Teammates spawned by
    - `Agent({subagent_type: "Code Reviewer", name: "reviewer-<lens>", team_name: "ship-<slug>", ...})` + `TaskCreate` per teammate.
    - Augmentation rule: if the prompt or diff carries security signals (`auth`, `credential`, `crypto`, `token`), `reviewer-security` is mandatory; otherwise default-include.
 2. Reviewers run concurrently per `parallel-panel` discipline. Severity dedup follows `_shared/team-protocol.md#severity-vocabulary-canonical-lattice`: peer-DM dedup for severity ≤ `minor`; dedup-arbiter (team-lead) for severity ≥ `major`. Peer-DM outcomes are logged via `team_memory_append({section: "dedup_decisions", ...})`.
-3. Reviewers submit findings as `agent: "reviewer"` (family) and may set `item.lens: "reviewer-<lens>"` once substrate task 20 lands.
+3. Reviewers submit findings as `agent: "reviewer"` (family) and MUST set `item.lens: "reviewer-<lens>"` (e.g., `"reviewer-architecture"`, `"reviewer-correctness"`, `"reviewer-security"`) so post-hoc audit can recover which lens flagged what.
 4. When the review task completes, team-lead consolidates the report at `docs/reviews/<YYYY-MM-DD>-<slug>-review.md`, records `team_memory_append({section: "handoffs", ...})` for the stage 2→3 transition, and sends `shutdown_request` to all reviewers.
 5. **Blocker handling:** if the consolidated report contains any `blocker`-severity findings, team-lead spawns ONE follow-up `developer-backend` (or `developer-frontend`) teammate in a NEW work cycle to autofix. This counts as cycle 2; max 2 review-rework cycles total before escalating to the user with `status: blocked`.
 
@@ -73,7 +73,7 @@ This skill follows the canonical memory and team protocols. Teammates spawned by
 
 ### Stage 4 — teardown
 
-1. Team-lead writes the final `## Memory deltas` summary into `_shared` if the cycle produced any project-level decisions (via `memory_findings_submit({agent: "_shared", ...})` — only team-lead may do this).
+1. Team-lead writes the final `## Memory deltas` summary into `_shared` if the cycle produced any project-level decisions (via `memory_append_shared({section: "decisions", item: {...}})` — only team-lead may do this; the substrate slug regex disallows `agent: "_shared"`).
 2. Parent skill sends `SendMessage({to: "team-lead", message: {type: "shutdown_request"}})` (or team-lead self-shutdowns once final summary is committed).
 3. `TeamDelete({team_name: "ship-<slug>"})`.
 
