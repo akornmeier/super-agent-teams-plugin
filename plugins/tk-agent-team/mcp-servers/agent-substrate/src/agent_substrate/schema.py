@@ -12,7 +12,7 @@ import re
 from datetime import datetime, timezone
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 # --- Identifiers ------------------------------------------------------------
 
@@ -165,3 +165,153 @@ def now_iso() -> str:
         .isoformat(timespec="seconds")
         .replace("+00:00", "Z")
     )
+
+
+# --- Findings wire format ---------------------------------------------------
+
+# Mapping from FindingItem.kind to the section it must be filed under.
+# The substrate enforces that section and kind agree (see Finding._validate_*).
+KIND_TO_SECTION: dict[str, str] = {
+    "pattern": "patterns",
+    "pitfall": "pitfalls",
+    "decision": "decisions",
+    "open_question": "open_questions",
+}
+
+
+class FindingItem(BaseModel):
+    """Inner payload of a Finding submitted by a teammate.
+
+    Universal handle is `summary` — for `decision` kinds it maps to `choice`
+    on the existing `Decision` model, and for `open_question` kinds the body
+    can be supplied via `question` (with `summary` as a fallback). The
+    substrate translation lives in `finding_item_to_section_dict`.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    kind: Literal["pattern", "pitfall", "decision", "open_question"]
+    summary: str
+    id: str | None = None
+    evidence: str | None = None
+    why: str | None = None
+    rationale: str | None = None
+    supersedes: str | None = None
+    question: str | None = None
+    protected: bool = False
+    related: list[str] | None = None
+
+
+class Finding(BaseModel):
+    """Wire format for `memory_findings_submit`.
+
+    See `skills/_shared/findings-schema.md` for the contract document. The
+    `agent` slug is validated against the same regex as `validate_agent_name`
+    so findings cannot escape the per-agent memory namespace.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    agent: str
+    section: SectionName
+    item: FindingItem
+
+    @field_validator("agent")
+    @classmethod
+    def _validate_agent_slug(cls, v: str) -> str:
+        validate_agent_name(v)  # raises ValueError on bad slug
+        return v
+
+    @model_validator(mode="after")
+    def _validate_kind_section_consistency(self) -> "Finding":
+        # Vocabulary consistency rule from findings-schema.md: the
+        # parent section and the inner kind must express the same
+        # vocabulary in two places, and they MUST agree.
+        expected = KIND_TO_SECTION[self.item.kind]
+        if expected != self.section:
+            raise ValueError(
+                f"Vocabulary mismatch: section={self.section!r} but "
+                f"item.kind={self.item.kind!r}; kind={self.item.kind!r} "
+                f"requires section={expected!r}"
+            )
+        return self
+
+
+# --- Helpers for translating FindingItem -> per-section item dict -----------
+
+# Slug pattern reused from ITEM_ID_PATTERN above. Used to derive a
+# deterministic id from a summary when the caller did not provide one.
+_ID_SLUG_NONALNUM = re.compile(r"[^a-z0-9]+")
+
+
+def _slugify_id(text: str, max_len: int = 32) -> str:
+    """Best-effort deterministic id from a free-form summary string.
+
+    Lowercases, replaces non-alnum runs with hyphens, strips leading/trailing
+    hyphens, and trims to `max_len`. Falls back to "item" if the input has no
+    alphanumeric characters at all (matches `ITEM_ID_PATTERN` requirement that
+    ids start with an alphanumeric).
+    """
+    lowered = text.lower()
+    slugged = _ID_SLUG_NONALNUM.sub("-", lowered).strip("-")
+    if not slugged:
+        return "item"
+    slugged = slugged[:max_len].rstrip("-")
+    if not slugged:
+        return "item"
+    # If after trimming we ended up starting with a hyphen-derived nothing,
+    # ensure first char is alnum (ITEM_ID_PATTERN requires it).
+    if not slugged[0].isalnum():
+        slugged = "item-" + slugged
+        slugged = slugged[:max_len].rstrip("-")
+    return slugged
+
+
+def finding_item_to_section_dict(item: FindingItem) -> dict:
+    """Convert a FindingItem to the dict shape expected by SECTION_MODELS[section].
+
+    The per-section item models (Pattern, Pitfall, Decision, OpenQuestion) do
+    not carry a `kind` field — that's redundant once the item is filed under
+    its section. This helper drops `kind`, picks only the optional fields
+    that belong to the target section, and remaps the universal `summary`
+    handle to the section-specific field name (`choice` for decisions,
+    `question` for open questions).
+
+    A deterministic id is generated from the summary if `item.id` is None.
+    """
+    item_id = item.id or _slugify_id(item.summary)
+
+    if item.kind == "pattern":
+        # Pattern: id, summary, evidence, protected
+        return {
+            "id": item_id,
+            "summary": item.summary,
+            "evidence": item.evidence,
+            "protected": item.protected,
+        }
+    if item.kind == "pitfall":
+        # Pitfall: id, summary, why, protected
+        return {
+            "id": item_id,
+            "summary": item.summary,
+            "why": item.why,
+            "protected": item.protected,
+        }
+    if item.kind == "decision":
+        # Decision: id, choice (<- summary), rationale, supersedes, protected
+        return {
+            "id": item_id,
+            "choice": item.summary,
+            "rationale": item.rationale,
+            "supersedes": item.supersedes,
+            "protected": item.protected,
+        }
+    if item.kind == "open_question":
+        # OpenQuestion: id, question (<- question or summary fallback), protected
+        return {
+            "id": item_id,
+            "question": item.question or item.summary,
+            "protected": item.protected,
+        }
+    # Should be unreachable thanks to the Literal on FindingItem.kind.
+    raise ValueError(f"Unknown FindingItem.kind: {item.kind!r}")
