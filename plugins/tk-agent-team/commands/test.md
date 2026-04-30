@@ -14,7 +14,7 @@ Explicit entry point for the verification phase. Thin wrapper over the `test` sk
 ## Steps
 
 1. Parse `$ARGUMENTS`. Detect `--continue` flag.
-2. Dispatch to the orchestrator agent: `Agent({subagent_type: "orchestrator", description: "Route /test", prompt: "<parsed prompt>"})`. The orchestrator classifies against `routing.yaml`, pre-loads relevant memory, writes a brief, and either invokes the matched skill (solo `team_pattern`) or calls `TeamCreate` and spawns a `team-lead` (team `team_pattern`). It returns a structured summary with `artifact_path`, `status`, and `next_skill_hint`.
+2. Dispatch to the orchestrator agent: `Agent({subagent_type: "orchestrator", description: "Route /test", prompt: "test <parsed prompt>"})`. The orchestrator classifies against `routing.yaml`, pre-loads relevant memory, writes a brief, and either invokes the matched skill (solo `team_pattern`) or calls `TeamCreate` and spawns a `team-lead` (team `team_pattern`). It returns a structured summary with `artifact_path`, `status`, and `next_skill_hint`.
 3. Branch on `status`:
    - `complete` — proceed to step 4.
    - `needs_human` / `blocked` — print reason, stop, do not chain.

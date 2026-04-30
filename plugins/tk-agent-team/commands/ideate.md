@@ -14,7 +14,7 @@ Explicit entry point for the divergent-exploration phase of the agent-team pipel
 ## Steps
 
 1. **Parse** `$ARGUMENTS`. Detect `--continue` flag. Treat the rest as the user prompt for the skill.
-2. **Dispatch** to the orchestrator agent: `Agent({subagent_type: "orchestrator", description: "Route /ideate", prompt: "<parsed prompt>"})`. The orchestrator classifies against `routing.yaml`, pre-loads relevant memory, writes a brief, and either invokes the matched skill (solo `team_pattern`) or calls `TeamCreate` and spawns a `team-lead` (team `team_pattern`). It returns a structured summary with `artifact_path`, `status`, and `next_skill_hint`.
+2. **Dispatch** to the orchestrator agent: `Agent({subagent_type: "orchestrator", description: "Route /ideate", prompt: "/ideate\n\n<parsed prompt>"})`. The orchestrator classifies against `routing.yaml`, pre-loads relevant memory, writes a brief, and either invokes the matched skill (solo `team_pattern`) or calls `TeamCreate` and spawns a `team-lead` (team `team_pattern`). It returns a structured summary with `artifact_path`, `status`, and `next_skill_hint`.
 3. **Branch on `status`:**
    - `complete` — proceed to step 4.
    - `needs_human` — print the skill's reason and stop. Do not chain.
@@ -52,7 +52,7 @@ Rationale: requirements deserve human review before `/plan` commits architecture
 
 - This command never writes files directly — only the `ideate` skill writes to `docs/ideation/`.
 - Auto-chain must respect skill `status`: if any chained skill returns `blocked` or `needs_human`, halt the chain and surface the reason.
-- The chain never bypasses `/plan` to reach `/work` — order is fixed: ideate → brainstorm → plan → work → ship.
+- The chain never bypasses `/plan` to reach later phases — order is fixed: ideate → brainstorm → plan → work → review → test → ship.
 
 ## See also
 

@@ -109,4 +109,4 @@ def body_section(text: str, heading: str) -> str:
         if lines[i].startswith("## "):
             end = i
             break
-    return "\n".join(lines[start:end])
+    return "\n".join(lines[start + 1:end])
