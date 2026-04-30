@@ -61,6 +61,14 @@ The tool names exposed to the parent session are `mcp__agent-substrate__memory_r
 
 Verify the server is connected by running `/mcp` in Claude Code — you should see `plugin:tk-agent-team:agent-substrate` with a green checkmark.
 
+### Troubleshooting: substrate fails to connect / `.agent-memory` stays empty
+
+If `claude mcp list` reports `agent-substrate ✗ Failed to connect` and your `.agent-memory/` directory never gets populated, the cause is almost always [claude-code #9427](https://github.com/anthropics/claude-code/issues/9427): for plugin-rooted `.mcp.json` files, Claude Code passes `${CLAUDE_PROJECT_DIR}` through to the spawned MCP process **unexpanded**. The substrate sees the literal string `${CLAUDE_PROJECT_DIR}/.agent-memory`, fails the absolute-path check, and crashes on startup.
+
+This server works around the bug by substituting `${CLAUDE_PROJECT_DIR}` with the value of `PWD` (which Claude Code does set correctly on the spawned process). The workaround lives in `src/agent_substrate/_paths.py` and is pinned by `tests/test_base_dir_resolution.py`. Once the upstream issue is fixed, the substitution branch can be deleted.
+
+If the workaround itself fails (e.g., `PWD` is also unset in your shell), set `AGENT_SUBSTRATE_BASE_DIR` to an absolute path explicitly and the server will use it verbatim.
+
 To enable Agent Teams, set this in `~/.claude/settings.json` under `"env"`:
 
 ```json

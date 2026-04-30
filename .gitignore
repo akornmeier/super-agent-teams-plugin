@@ -18,6 +18,7 @@
 # Logs
 /logs/
 *.log
+plugins/tk-agent-team/logs/
 plugins/tk-agent-team/agents/logs/
 plugins/tk-agent-team/skills/logs/
 plugins/tk-agent-team/mcp-servers/agent-substrate/logs/
