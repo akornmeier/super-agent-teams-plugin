@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Plugin marketplace for Claude Code agent team extensions",
-    "version": "0.4.0"
+    "version": "0.4.2"
   },
   "plugins": [
     {

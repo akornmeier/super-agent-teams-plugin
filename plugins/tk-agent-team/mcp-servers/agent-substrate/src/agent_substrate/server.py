@@ -21,30 +21,25 @@ in.
 from __future__ import annotations
 
 import os
-from pathlib import Path
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 from pydantic import ValidationError
 
+from ._paths import resolve_base_dir
 from .schema import Finding, finding_item_to_section_dict
 from .storage import HARD_LIMIT, SOFT_LIMIT, MemoryStorage
 from .team_storage import TeamMemoryStorage
 
 # --- Server setup -----------------------------------------------------------
 
-_base_dir_env = os.environ.get("AGENT_SUBSTRATE_BASE_DIR")
-if not _base_dir_env:
-    raise RuntimeError(
-        "AGENT_SUBSTRATE_BASE_DIR environment variable must be set. "
-        "Configure it in .mcp.json or your environment."
-    )
-BASE_DIR = Path(_base_dir_env).expanduser()
-if not BASE_DIR.is_absolute():
-    raise RuntimeError(
-        f"AGENT_SUBSTRATE_BASE_DIR must be an absolute path, got {_base_dir_env!r}"
-    )
-BASE_DIR = BASE_DIR.resolve()
+# `os.getcwd()` is unreliable as a project-dir signal because `uv run
+# --directory ...` chdirs into the server dir at launch; `PWD` survives
+# because Claude Code sets it on the spawned process.
+BASE_DIR = resolve_base_dir(
+    os.environ.get("AGENT_SUBSTRATE_BASE_DIR"),
+    os.environ.get("PWD"),
+)
 
 mcp = FastMCP("agent-substrate")
 storage = MemoryStorage(BASE_DIR)

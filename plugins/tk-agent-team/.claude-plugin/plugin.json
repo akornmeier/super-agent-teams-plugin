@@ -1,6 +1,6 @@
 {
   "name": "tk-agent-team",
-  "version": "0.4.0",
+  "version": "0.4.2",
   "description": "Opinionated Claude Code Agent Teams plugin with durable per-agent YAML memory, real teams via TeamCreate (parallel-panel, pipeline, staged-team, pair), validated findings submission, and an extensible curator + domain-specialist roster.",
   "author": {
     "name": "Asbury Labs"
